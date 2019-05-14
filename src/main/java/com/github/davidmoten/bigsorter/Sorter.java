@@ -102,7 +102,7 @@ public final class Sorter<T> {
                 .map(f -> {
                     try {
                         return createState(f);
-                    } catch (FileNotFoundException e) {
+                    } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
                 }) //
@@ -136,7 +136,7 @@ public final class Sorter<T> {
         }
     }
 
-    private State<T> createState(File f) throws FileNotFoundException {
+    private State<T> createState(File f) throws IOException {
         InputStream in = new BufferedInputStream(new FileInputStream(f));
         Reader<T> reader = serializer.createReader(in);
         T t = reader.read();
