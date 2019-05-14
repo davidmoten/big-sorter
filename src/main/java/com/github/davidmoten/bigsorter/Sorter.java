@@ -13,90 +13,137 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import com.github.davidmoten.guavamini.Preconditions;
 
 public final class Sorter<T> {
 
-	private final File file;
-	private final Serializer<T> serializer;
-	private final File output;
-	private final long maxFileSize;
-	private final Comparator<T> comparator;
-	private final int maxFilesPerMerge;
-	private final int maxItemsPerPart;
+    private final File file;
+    private final Serializer<T> serializer;
+    private final File output;
+    private final Comparator<T> comparator;
+    private final int maxFilesPerMerge;
+    private final int maxItemsPerPart;
 
-	public Sorter(File file, Serializer<T> serializer, File output, long maxFileSize, Comparator<T> comparator,
-			int maxFilesPerMerge, int maxItemsPerPart) {
-		this.file = file;
-		this.serializer = serializer;
-		this.output = output;
-		this.maxFileSize = maxFileSize;
-		this.comparator = comparator;
-		this.maxFilesPerMerge = maxFilesPerMerge;
-		this.maxItemsPerPart = maxItemsPerPart;
-	}
+    public Sorter(File file, Serializer<T> serializer, File output, Comparator<T> comparator,
+            int maxFilesPerMerge, int maxItemsPerPart) {
+        this.file = file;
+        this.serializer = serializer;
+        this.output = output;
+        this.comparator = comparator;
+        this.maxFilesPerMerge = maxFilesPerMerge;
+        this.maxItemsPerPart = maxItemsPerPart;
+    }
 
-	private void sort() {
-		try {
-			Deque<File> stack = new LinkedList<>();
-			stack.offer(file);
-			List<File> list = new ArrayList<>(maxFilesPerMerge);
-			while (!stack.isEmpty()) {
-				File file = stack.poll();
-				if (file.length() <= maxFileSize) {
-					list.add(sortInMemory(file));
-				} else {
-					List<T> chunk = new ArrayList<>();
-					try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
-						{
-							T t = null;
-							while ((t = serializer.read(in)) != null) {
-								chunk.add(t);
-								if (chunk.size == maxItemsPerPart) {
-									list.add
-								}
-							}
-						}
-					}
-					
-				}
-			}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
+    public void sort() {
+        try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+            sort(in);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
-	private File sortAndWriteToFile(List<T> list) throws FileNotFoundException, IOException {
-		Collections.sort(list, comparator);
-		File file = nextTempFile();
-		writeToFile(list, file);
-		return file;
-	}
+    private void sort(InputStream in) throws IOException {
+        // read the input into sorted small files
+        List<File> files = new ArrayList<>();
+        {
+            int i = 0;
+            List<T> list = new ArrayList<>();
+            while (true) {
+                T t = serializer.read(in);
+                if (t != null) {
+                    list.add(t);
+                    i++;
+                }
+                if (t == null || i == maxItemsPerPart) {
+                    i = 0;
+                    if (list.size() > 0) {
+                        File f = sortAndWriteToFile(list);
+                        files.add(f);
+                        list.clear();
+                    }
+                }
+                if (t == null) {
+                    break;
+                }
+            }
+        }
 
-	private void writeToFile(List<T> list, File f) throws FileNotFoundException, IOException {
-		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f))) {
-			for (T t : list) {
-				serializer.write(out, t);
-			}
-		}
-	}
+        // merge the files in chunks repeatededly until only one remains
+        List<File> nextRound = new ArrayList<>();
+        for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
+            File merged = merge(files.subList(i, Math.min(files.size() - 1, i + maxFilesPerMerge)));
+            nextRound.add(merged);
+        }
+        files = nextRound;
+    }
 
-	private File nextTempFile() throws IOException {
-		return File.createTempFile("big-sorter", ".bin");
-	}
+    private File merge(List<File> list) throws IOException {
+        Preconditions.checkArgument(!list.isEmpty());
+        if (list.size() == 1) {
+            return list.get(0);
+        }
+        List<State<T>> states = list.stream().map(f -> {
+            try {
+                return createState(f);
+            } catch (FileNotFoundException e) {
+                throw new UncheckedIOException(e);
+            }
+        }).collect(Collectors.toList());
+        File output = nextTempFile();
+        while (true) {
 
-	private File sortInMemory(File f) throws FileNotFoundException, IOException {
-		List<T> list = new ArrayList<>();
-		try (InputStream in = new BufferedInputStream(new FileInputStream(f));) {
-			{
-				T t = null;
-				while ((t = serializer.read(in)) != null) {
-					list.add(t);
-				}
-			}
-			return sortAndWriteToFile(list);
-		}
-	}
+        }
+    }
+
+    private State<T> createState(File f) throws FileNotFoundException {
+        InputStream in = new BufferedInputStream(new FileInputStream(f));
+        T t = serializer.read(in);
+        return new State<T>(in, t);
+    }
+
+    private static final class State<T> {
+        InputStream in;
+        T value;
+
+        State(InputStream in, T value) {
+            this.in = in;
+            this.value = value;
+        }
+
+    }
+
+    private File sortAndWriteToFile(List<T> list) throws FileNotFoundException, IOException {
+        Collections.sort(list, comparator);
+        File file = nextTempFile();
+        writeToFile(list, file);
+        return file;
+    }
+
+    private void writeToFile(List<T> list, File f) throws FileNotFoundException, IOException {
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f))) {
+            for (T t : list) {
+                serializer.write(out, t);
+            }
+        }
+    }
+
+    private File nextTempFile() throws IOException {
+        return File.createTempFile("big-sorter", ".bin");
+    }
+
+    private File sortInMemory(File f) throws FileNotFoundException, IOException {
+        List<T> list = new ArrayList<>();
+        try (InputStream in = new BufferedInputStream(new FileInputStream(f));) {
+            {
+                T t = null;
+                while ((t = serializer.read(in)) != null) {
+                    list.add(t);
+                }
+            }
+            return sortAndWriteToFile(list);
+        }
+    }
 }
