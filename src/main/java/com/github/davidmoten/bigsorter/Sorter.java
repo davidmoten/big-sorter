@@ -25,15 +25,17 @@ public final class Sorter<T> {
 	private final long maxFileSize;
 	private final Comparator<T> comparator;
 	private final int maxFilesPerMerge;
+	private final int maxItemsPerPart;
 
 	public Sorter(File file, Serializer<T> serializer, File output, long maxFileSize, Comparator<T> comparator,
-			int maxFilesPerMerge) {
+			int maxFilesPerMerge, int maxItemsPerPart) {
 		this.file = file;
 		this.serializer = serializer;
 		this.output = output;
 		this.maxFileSize = maxFileSize;
 		this.comparator = comparator;
 		this.maxFilesPerMerge = maxFilesPerMerge;
+		this.maxItemsPerPart = maxItemsPerPart;
 	}
 
 	private void sort() {
@@ -47,16 +49,18 @@ public final class Sorter<T> {
 					list.add(sortInMemory(file));
 				} else {
 					List<T> chunk = new ArrayList<>();
-					File temp = nextTempFile();
-					try (InputStream in = new BufferedInputStream(new FileInputStream(f))) {
+					try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
 						{
 							T t = null;
 							while ((t = serializer.read(in)) != null) {
-								list.add(t);
+								chunk.add(t);
+								if (chunk.size == maxItemsPerPart) {
+									list.add
+								}
 							}
 						}
-						return sortAndWriteToFile(list);
 					}
+					
 				}
 			}
 		} catch (IOException e) {
