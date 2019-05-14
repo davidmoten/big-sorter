@@ -51,26 +51,27 @@ public final class Sorter<T> {
     private void sort(InputStream in) throws IOException {
         // read the input into sorted small files
         List<File> files = new ArrayList<>();
-        Reader<T> reader = serializer.createReader(in);
-        {
-            int i = 0;
-            List<T> list = new ArrayList<>();
-            while (true) {
-                T t = reader.read();
-                if (t != null) {
-                    list.add(t);
-                    i++;
-                }
-                if (t == null || i == maxItemsPerPart) {
-                    i = 0;
-                    if (list.size() > 0) {
-                        File f = sortAndWriteToFile(list);
-                        files.add(f);
-                        list.clear();
+        try (Reader<T> reader = serializer.createReader(in)) {
+            {
+                int i = 0;
+                List<T> list = new ArrayList<>();
+                while (true) {
+                    T t = reader.read();
+                    if (t != null) {
+                        list.add(t);
+                        i++;
                     }
-                }
-                if (t == null) {
-                    break;
+                    if (t == null || i == maxItemsPerPart) {
+                        i = 0;
+                        if (list.size() > 0) {
+                            File f = sortAndWriteToFile(list);
+                            files.add(f);
+                            list.clear();
+                        }
+                    }
+                    if (t == null) {
+                        break;
+                    }
                 }
             }
         }
@@ -109,9 +110,10 @@ public final class Sorter<T> {
                 .filter(x -> x.value != null) //
                 .collect(Collectors.toList());
         File output = nextTempFile();
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output))) {
-            Writer<T> writer = serializer.createWriter(out);
-            PriorityQueue<State<T>> q = new PriorityQueue<>(states.size(), (x, y) -> compare(x, y));
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output));
+                Writer<T> writer = serializer.createWriter(out)) {
+            PriorityQueue<State<T>> q = new PriorityQueue<>((x, y) -> compare(x, y));
+            q.addAll(states);
             while (!q.isEmpty()) {
                 State<T> state = q.poll();
                 writer.write(state.value);
@@ -139,7 +141,7 @@ public final class Sorter<T> {
     private State<T> createState(File f) throws IOException {
         InputStream in = new BufferedInputStream(new FileInputStream(f));
         Reader<T> reader = serializer.createReader(in);
-        T t = reader.read();
+        T t = reader.readAutoClosing();
         return new State<T>(reader, t);
     }
 
@@ -161,8 +163,8 @@ public final class Sorter<T> {
     }
 
     private void writeToFile(List<T> list, File f) throws FileNotFoundException, IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f))) {
-            Writer<T> writer = serializer.createWriter(out);
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f));
+                Writer<T> writer = serializer.createWriter(out)) {
             for (T t : list) {
                 writer.write(t);
             }

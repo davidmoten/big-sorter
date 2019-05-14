@@ -33,7 +33,17 @@ public class SorterTest {
 
                     @Override
                     public Character read() throws IOException {
-                        return Character.valueOf((char) r.read());
+                        int c = r.read();
+                        if (c == -1) {
+                            return null;
+                        } else {
+                            return Character.valueOf((char) c);
+                        }
+                    }
+
+                    @Override
+                    public void close() throws IOException {
+                        r.close();
                     }
 
                 };
@@ -49,6 +59,11 @@ public class SorterTest {
                     public void write(Character value) throws IOException {
                         w.write((int) value.charValue());
                     }
+
+                    @Override
+                    public void close() throws IOException {
+                        w.close();
+                    }
                 };
             }
 
@@ -62,6 +77,8 @@ public class SorterTest {
         Sorter<Character> sorter = new Sorter<Character>(f, serializer, output,
                 (x, y) -> Character.compare(x, y), 20, 3);
         sorter.sort();
+        
+        
     }
 
 }
