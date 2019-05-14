@@ -5,8 +5,8 @@ import java.io.OutputStream;
 
 public interface Serializer<T> {
 
-	T read(InputStream is);
+	Reader<T> createReader(InputStream in);
 	
-	void write(OutputStream out, T value);
+	Writer<T> createWriter(OutputStream out);
 	
 }
