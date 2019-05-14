@@ -10,10 +10,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 
 import com.github.davidmoten.guavamini.Preconditions;
@@ -72,12 +75,20 @@ public final class Sorter<T> {
         }
 
         // merge the files in chunks repeatededly until only one remains
-        List<File> nextRound = new ArrayList<>();
-        for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
-            File merged = merge(files.subList(i, Math.min(files.size() - 1, i + maxFilesPerMerge)));
-            nextRound.add(merged);
+        while (files.size() > 1) {
+            List<File> nextRound = new ArrayList<>();
+            for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
+                File merged = merge(
+                        files.subList(i, Math.min(files.size() - 1, i + maxFilesPerMerge)));
+                nextRound.add(merged);
+            }
+            files = nextRound;
         }
-        files = nextRound;
+        Files.move( //
+                files.get(0).toPath(), //
+                output.toPath(), //
+                StandardCopyOption.ATOMIC_MOVE, //
+                StandardCopyOption.REPLACE_EXISTING);
     }
 
     private File merge(List<File> list) throws IOException {
@@ -85,16 +96,41 @@ public final class Sorter<T> {
         if (list.size() == 1) {
             return list.get(0);
         }
-        List<State<T>> states = list.stream().map(f -> {
-            try {
-                return createState(f);
-            } catch (FileNotFoundException e) {
-                throw new UncheckedIOException(e);
-            }
-        }).collect(Collectors.toList());
+        List<State<T>> states = list //
+                .stream() //
+                .map(f -> {
+                    try {
+                        return createState(f);
+                    } catch (FileNotFoundException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }) //
+                .filter(x -> x.value != null) //
+                .collect(Collectors.toList());
         File output = nextTempFile();
-        while (true) {
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output))) {
+            PriorityQueue<State<T>> q = new PriorityQueue<>(states.size(), (x, y) -> compare(x, y));
+            while (!q.isEmpty()) {
+                State<T> state = q.poll();
+                serializer.write(out, state.value);
+                state.value = serializer.read(state.in);
+                if (state.value != null) {
+                    q.offer(state);
+                }
+            }
+        }
+        return output;
+    }
 
+    private int compare(State<T> x, State<T> y) {
+        if (x.value == null && y.value == null) {
+            return 0;
+        } else if (x.value == null) {
+            return -1;
+        } else if (y.value == null) {
+            return 1;
+        } else {
+            return comparator.compare(x.value, y.value);
         }
     }
 
@@ -112,7 +148,6 @@ public final class Sorter<T> {
             this.in = in;
             this.value = value;
         }
-
     }
 
     private File sortAndWriteToFile(List<T> list) throws FileNotFoundException, IOException {
@@ -134,16 +169,4 @@ public final class Sorter<T> {
         return File.createTempFile("big-sorter", ".bin");
     }
 
-    private File sortInMemory(File f) throws FileNotFoundException, IOException {
-        List<T> list = new ArrayList<>();
-        try (InputStream in = new BufferedInputStream(new FileInputStream(f));) {
-            {
-                T t = null;
-                while ((t = serializer.read(in)) != null) {
-                    list.add(t);
-                }
-            }
-            return sortAndWriteToFile(list);
-        }
-    }
 }
