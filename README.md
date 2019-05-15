@@ -49,10 +49,10 @@ Serializer<Integer> serializer = new DataSerializer<Integer>() {
 };
       
 Sorter 
-  .serializer(serializer) //
-  .comparator((x, y) -> Integer.compare(x, y)) //
-  .input(in) //
-  .output(out) //
+  .serializer(serializer) 
+  .comparator((x, y) -> Integer.compare(x, y)) 
+  .input(in) 
+  .output(out) 
   .sort();
 ``` 
 ## Benchmarks
