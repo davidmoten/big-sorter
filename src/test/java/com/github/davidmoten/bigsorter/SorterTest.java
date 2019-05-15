@@ -3,7 +3,6 @@ package com.github.davidmoten.bigsorter;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,13 +47,31 @@ public class SorterTest {
 	public void testFour() throws IOException {
 		assertEquals("1234", sort("2431"));
 	}
-	
+
 	@Test
 	public void testDuplicatesPreserved() throws IOException {
 		assertEquals("122234", sort("242312"));
 	}
 
-	private String sort(String s) throws IOException {
+	@Test
+	public void testLines() throws IOException {
+		assertEquals("ab\nc\ndef", sortLines("c\ndef\nab"));
+	}
+
+	private static String sortLines(String s) throws IOException {
+		File output = new File("target/out.txt");
+		Sorter //
+				.linesUtf8() //
+				.input(s) //
+				.output(output) //
+				.maxFilesPerMerge(3) //
+				.maxItemsPerFile(2) //
+				.sort();
+
+		return Files.readAllLines(output.toPath()).stream().collect(Collectors.joining("\n"));
+	}
+
+	private static String sort(String s) throws IOException {
 		File f = new File("target/temp.txt");
 		writeStringToFile(s, f);
 		Serializer<Character> serializer = createCharacterSerializer();

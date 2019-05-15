@@ -2,6 +2,7 @@ package com.github.davidmoten.bigsorter;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -10,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -30,7 +33,7 @@ public final class Sorter<T> {
 	private final int maxFilesPerMerge;
 	private final int maxItemsPerPart;
 
-	public Sorter(InputStream input, Serializer<T> serializer, File output, Comparator<? super T> comparator,
+	Sorter(InputStream input, Serializer<T> serializer, File output, Comparator<? super T> comparator,
 			int maxFilesPerMerge, int maxItemsPerFile) {
 		Preconditions.checkNotNull(input, "input must be specified");
 		Preconditions.checkNotNull(serializer, "serializer must be specified");
@@ -50,9 +53,12 @@ public final class Sorter<T> {
 		return new Builder<T>(serializer);
 	}
 
-	public static <T> Builder<T> lines() {
-		// TODO
-		return null;
+	public static <T> Builder<String> lines(Charset charset) {
+		return serializer(Serializer.lines(charset)).comparator(Comparator.naturalOrder());
+	}
+
+	public static <T> Builder<String> linesUtf8() {
+		return serializer(Serializer.linesUtf8()).comparator(Comparator.naturalOrder());
 	}
 
 	public static final class Builder<T> {
@@ -66,6 +72,14 @@ public final class Sorter<T> {
 
 		Builder(Serializer<T> serializer) {
 			this.serializer = serializer;
+		}
+
+		public Builder<T> input(String string, Charset charset) {
+			return input(new ByteArrayInputStream(string.getBytes(charset)));
+		}
+
+		public Builder<T> input(String string) {
+			return input(string, StandardCharsets.UTF_8);
 		}
 
 		public Builder<T> input(InputStream input) {
@@ -100,12 +114,10 @@ public final class Sorter<T> {
 			return this;
 		}
 
-		public void sort() {
+		public void sort() throws IOException {
 			if (inputFile != null) {
 				try (InputStream in = new BufferedInputStream(new FileInputStream(inputFile))) {
 					sort(in);
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
 				}
 			} else {
 				sort(input);
@@ -199,9 +211,12 @@ public final class Sorter<T> {
 			while (!q.isEmpty()) {
 				State<T> state = q.poll();
 				writer.write(state.value);
-				state.value = state.reader.read();
+				state.value = state.reader.readAutoClosing();
 				if (state.value != null) {
 					q.offer(state);
+				} else {
+					// delete intermediate files
+					state.file.delete();
 				}
 			}
 		}
@@ -212,14 +227,16 @@ public final class Sorter<T> {
 		InputStream in = new BufferedInputStream(new FileInputStream(f));
 		Reader<T> reader = serializer.createReader(in);
 		T t = reader.readAutoClosing();
-		return new State<T>(reader, t);
+		return new State<T>(f, reader, t);
 	}
 
 	private static final class State<T> {
+		final File file;
 		Reader<T> reader;
 		T value;
 
-		State(Reader<T> reader, T value) {
+		State(File file, Reader<T> reader, T value) {
+			this.file = file;
 			this.reader = reader;
 			this.value = value;
 		}
