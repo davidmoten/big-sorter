@@ -5,6 +5,9 @@ import static org.junit.Assert.assertNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -88,6 +91,78 @@ public class SorterTest {
 		assertEquals(2, (long) reader.read());
 		assertEquals(3, (long) reader.read());
 		assertNull(reader.read());
+	}
+
+	@Test
+	public void testFixedSizeRecordSerializer() throws IOException {
+		byte[] b = new byte[] { 8, 2, 3, 4, 2, 7, 3, 9 };
+		Serializer<byte[]> serializer = Serializer.fixedSizeRecord(2);
+		InputStream in = new ByteArrayInputStream(b);
+		Sorter //
+				.serializer(serializer) //
+				.comparator((x, y) -> x[0] < y[0] ? -1 : (x[0] == y[0] ? 0 : 1)) //
+				.input(in) //
+				.output(OUTPUT) //
+				.sort();
+		Reader<byte[]> reader = serializer.createReader(new FileInputStream(OUTPUT));
+		assertEquals(2, reader.read()[0]);
+		assertEquals(3, reader.read()[0]);
+		assertEquals(3, reader.read()[0]);
+		assertEquals(8, reader.read()[0]);
+		assertNull(reader.read());
+	}
+
+	@Test
+	public void testDataSerializer() throws IOException {
+		Serializer<Pair> serializer = new DataSerializer<Pair>() {
+
+			@Override
+			public Pair read(DataInputStream dis) throws IOException {
+				final long a;
+				try {
+					a = dis.readLong();
+				} catch (EOFException e) {
+					return null;
+				}
+				long b = dis.readLong();
+				return new Pair(a, b);
+			}
+
+			@Override
+			public void write(DataOutputStream dos, Pair pair) throws IOException {
+				dos.writeLong(pair.a);
+				dos.writeLong(pair.b);
+			}
+		};
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		Writer<Pair> writer = serializer.createWriter(bytes);
+		writer.write(new Pair(3, 1));
+		writer.write(new Pair(2, 5));
+		writer.close();
+
+		InputStream in = new ByteArrayInputStream(bytes.toByteArray());
+
+		Sorter //
+				.serializer(serializer) //
+				.comparator((x, y) -> Long.compare(x.a, y.a)) //
+				.input(in) //
+				.output(OUTPUT) //
+				.sort();
+
+		Reader<Pair> reader = serializer.createReader(new FileInputStream(OUTPUT));
+		assertEquals(2, (long) reader.read().a);
+		assertEquals(3, (long) reader.read().a);
+		assertNull(reader.read());
+	}
+
+	private static final class Pair {
+		final long a;
+		final long b;
+
+		Pair(long a, long b) {
+			this.a = a;
+			this.b = b;
+		}
 	}
 
 	private static String sortLines(String s) throws IOException {

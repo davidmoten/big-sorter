@@ -22,4 +22,8 @@ public interface Serializer<T> {
 	public static <T extends Serializable> Serializer<T> java() {
 		return JavaSerializer.instance();
 	}
+	
+	public static Serializer<byte[]> fixedSizeRecord(int size) {
+		return new FixedSizeRecordSerializer(size);
+	}
 }
