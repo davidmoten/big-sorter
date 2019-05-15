@@ -1,8 +1,12 @@
 package com.github.davidmoten.bigsorter;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,13 +14,17 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
 
 public class SorterTest {
+
+	private static final File OUTPUT = new File("target/out.txt");
 
 	@Test
 	public void test() throws IOException {
@@ -58,34 +66,56 @@ public class SorterTest {
 		assertEquals("ab\nc\ndef", sortLines("c\ndef\nab"));
 	}
 
-	private static String sortLines(String s) throws IOException {
-		File output = new File("target/out.txt");
+	@Test
+	public void testJavaSerializer() throws IOException {
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		Writer<Serializable> writer = Serializer.java().createWriter(bytes);
+		writer.write(Long.valueOf(3));
+		writer.write(Long.valueOf(1));
+		writer.write(Long.valueOf(2));
+		writer.close();
+
+		InputStream in = new ByteArrayInputStream(bytes.toByteArray());
 		Sorter //
-				.linesUtf8() //
-				.input(s) //
-				.output(output) //
-				.maxFilesPerMerge(3) //
-				.maxItemsPerFile(2) //
+				.serializer(Serializer.<Long>java()) //
+				.comparator(Comparator.naturalOrder()) //
+				.input(in) //
+				.output(OUTPUT) //
 				.sort();
 
-		return Files.readAllLines(output.toPath()).stream().collect(Collectors.joining("\n"));
+		Reader<Long> reader = Serializer.<Long>java().createReader(new FileInputStream(OUTPUT));
+		assertEquals(1, (long) reader.read());
+		assertEquals(2, (long) reader.read());
+		assertEquals(3, (long) reader.read());
+		assertNull(reader.read());
+	}
+
+	private static String sortLines(String s) throws IOException {
+		Sorter //
+				.serializerTextUtf8() //
+				.input(s) //
+				.maxFilesPerMerge(3) //
+				.maxItemsPerFile(2) //
+				.output(OUTPUT) //
+				.sort();
+
+		return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
 	}
 
 	private static String sort(String s) throws IOException {
 		File f = new File("target/temp.txt");
 		writeStringToFile(s, f);
 		Serializer<Character> serializer = createCharacterSerializer();
-		File output = new File("target/out.txt");
 		Sorter //
 				.serializer(serializer) //
 				.comparator((x, y) -> Character.compare(x, y)) //
 				.input(f) //
-				.output(output) //
 				.maxFilesPerMerge(3) //
 				.maxItemsPerFile(2) //
+				.output(OUTPUT) //
 				.sort();
 
-		return Files.readAllLines(output.toPath()).stream().collect(Collectors.joining("\n"));
+		return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
 	}
 
 	private static void writeStringToFile(String s, File f) throws FileNotFoundException {

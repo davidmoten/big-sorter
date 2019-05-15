@@ -53,11 +53,11 @@ public final class Sorter<T> {
 		return new Builder<T>(serializer);
 	}
 
-	public static <T> Builder<String> lines(Charset charset) {
+	public static <T> Builder<String> serializerText(Charset charset) {
 		return serializer(Serializer.lines(charset)).comparator(Comparator.naturalOrder());
 	}
 
-	public static <T> Builder<String> linesUtf8() {
+	public static <T> Builder<String> serializerTextUtf8() {
 		return serializer(Serializer.linesUtf8()).comparator(Comparator.naturalOrder());
 	}
 
