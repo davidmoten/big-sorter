@@ -255,56 +255,58 @@ public class SorterTest {
 
 	@Test
 	public void testBig() throws IOException {
-		long n = Long.parseLong(System.getProperty("n", "1000000"));
-		File input = new File("target/large");
+		final long N = Long.parseLong(System.getProperty("n", "1000000"));
+		for (long n = 1000; n <= N; n = n * 10) {
+			File input = new File("target/large");
 
-		Serializer<Integer> serializer = new DataSerializer<Integer>() {
+			Serializer<Integer> serializer = new DataSerializer<Integer>() {
 
-			@Override
-			public Integer read(DataInputStream dis) throws IOException {
-				try {
-					return dis.readInt();
-				} catch (EOFException e) {
-					return null;
+				@Override
+				public Integer read(DataInputStream dis) throws IOException {
+					try {
+						return dis.readInt();
+					} catch (EOFException e) {
+						return null;
+					}
+				}
+
+				@Override
+				public void write(DataOutputStream dos, Integer value) throws IOException {
+					dos.writeInt(value);
+				}
+			};
+
+			try (OutputStream out = new BufferedOutputStream(new FileOutputStream(input))) {
+				Writer<Integer> writer = serializer.createWriter(out);
+				SecureRandom r = new SecureRandom();
+				for (int i = 0; i < n; i++) {
+					int v = r.nextInt(1000);
+					writer.write(v);
 				}
 			}
-
-			@Override
-			public void write(DataOutputStream dos, Integer value) throws IOException {
-				dos.writeInt(value);
+			long t = System.currentTimeMillis();
+			Sorter //
+					.serializer(serializer) //
+					.comparator((x, y) -> Integer.compare(x, y)) //
+					.input(input) //
+					.output(OUTPUT) //
+					.sort();
+			System.out.println(n + " integers sorted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
+			// ensure ascending
+			try (InputStream in = new BufferedInputStream(new FileInputStream(OUTPUT))) {
+				Reader<Integer> reader = serializer.createReader(in);
+				Integer v;
+				int last = Integer.MIN_VALUE;
+				int count = 0;
+				while ((v = reader.read()) != null) {
+					assertTrue(v >= last);
+					last = v;
+					count++;
+				}
+				assertEquals(n, count);
 			}
-		};
-
-		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(input))) {
-			Writer<Integer> writer = serializer.createWriter(out);
-			SecureRandom r = new SecureRandom();
-			for (int i = 0; i < n; i++) {
-				int v = r.nextInt(1000);
-				writer.write(v);
-			}
+			input.delete();
 		}
-		long t = System.currentTimeMillis();
-		Sorter //
-				.serializer(serializer) //
-				.comparator((x, y) -> Integer.compare(x, y)) //
-				.input(input) //
-				.output(OUTPUT) //
-				.sort();
-		System.out.println(n + " integers sorted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
-		// ensure ascending
-		try (InputStream in = new BufferedInputStream(new FileInputStream(OUTPUT))) {
-			Reader<Integer> reader = serializer.createReader(in);
-			Integer v;
-			int last = Integer.MIN_VALUE;
-			int count = 0;
-			while ((v = reader.read()) != null) {
-				assertTrue(v >= last);
-				last = v;
-				count++;
-			}
-			assertEquals(n, count);
-		}
-		input.delete();
 	}
 
 }
