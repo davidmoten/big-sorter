@@ -275,12 +275,13 @@ public class SorterTest {
 					dos.writeInt(value);
 				}
 			};
-
+			long total = 0;
 			try (OutputStream out = new BufferedOutputStream(new FileOutputStream(input))) {
 				Writer<Integer> writer = serializer.createWriter(out);
 				SecureRandom r = new SecureRandom();
 				for (int i = 0; i < n; i++) {
 					int v = r.nextInt(1000);
+					total += v;
 					writer.write(v);
 				}
 			}
@@ -298,12 +299,15 @@ public class SorterTest {
 				Integer v;
 				int last = Integer.MIN_VALUE;
 				int count = 0;
+				long total2 = 0;
 				while ((v = reader.read()) != null) {
 					assertTrue(v >= last);
+					total2 += v;
 					last = v;
 					count++;
 				}
 				assertEquals(n, count);
+				assertEquals(total, total2);
 			}
 			input.delete();
 		}
