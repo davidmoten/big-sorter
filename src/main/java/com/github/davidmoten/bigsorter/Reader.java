@@ -5,14 +5,27 @@ import java.io.IOException;
 
 public interface Reader<T> extends Closeable {
 
-    T read() throws IOException;
+	/**
+	 * Returns the next read value. If no more values returns null.
+	 * 
+	 * @return the next read value or null if no more values
+	 * @throws IOException
+	 */
+	T read() throws IOException;
 
-    default T readAutoClosing() throws IOException {
-        T v = read();
-        if (v == null) {
-            close();
-        }
-        return v;
-    }
+	/**
+	 * Returns the next read value. If no more values close() is called then null
+	 * returned.
+	 * 
+	 * @return the next read value or null if no more values
+	 * @throws IOException
+	 */
+	default T readAutoClosing() throws IOException {
+		T v = read();
+		if (v == null) {
+			close();
+		}
+		return v;
+	}
 
 }
