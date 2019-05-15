@@ -11,7 +11,7 @@ Sorts very large files (or `InputStream`s) by splitting to many intermediate sma
 
 ## Getting started
 
-## Example
+## Example using Java IO Serialization
 
 ```java
 File in = ...
@@ -26,7 +26,35 @@ Sorter
   .sort();
 
 ```
- 
+
+## Example using a custom Serializer
+Here's a serializer for a simple format using one 4 byte signed integer per record:
+
+```java
+Serializer<Integer> serializer = new DataSerializer<Integer>() {
+
+				@Override
+				public Integer read(DataInputStream dis) throws IOException {
+					try {
+						return dis.readInt();
+					} catch (EOFException e) {
+						return null;
+					}
+				}
+
+				@Override
+				public void write(DataOutputStream dos, Integer value) throws IOException {
+					dos.writeInt(value);
+				}
+			};
+      
+Sorter 
+  .serializer(serializer) //
+  .comparator((x, y) -> Integer.compare(x, y)) //
+  .input(in) //
+  .output(out) //
+  .sort();
+``` 
 ## Benchmarks
 
 ```
