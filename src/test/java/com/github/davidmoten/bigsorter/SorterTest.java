@@ -2,7 +2,10 @@ package com.github.davidmoten.bigsorter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -11,6 +14,7 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,6 +24,7 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
@@ -246,6 +251,60 @@ public class SorterTest {
 
 		};
 		return serializer;
+	}
+
+	@Test
+	public void testBig() throws IOException {
+		long n = Long.parseLong(System.getProperty("n", "1000000"));
+		File input = new File("target/large");
+
+		Serializer<Integer> serializer = new DataSerializer<Integer>() {
+
+			@Override
+			public Integer read(DataInputStream dis) throws IOException {
+				try {
+					return dis.readInt();
+				} catch (EOFException e) {
+					return null;
+				}
+			}
+
+			@Override
+			public void write(DataOutputStream dos, Integer value) throws IOException {
+				dos.writeInt(value);
+			}
+		};
+
+		try (OutputStream out = new BufferedOutputStream(new FileOutputStream(input))) {
+			Writer<Integer> writer = serializer.createWriter(out);
+			SecureRandom r = new SecureRandom();
+			for (int i = 0; i < n; i++) {
+				int v = r.nextInt(1000);
+				writer.write(v);
+			}
+		}
+		long t = System.currentTimeMillis();
+		Sorter //
+				.serializer(serializer) //
+				.comparator((x, y) -> Integer.compare(x, y)) //
+				.input(input) //
+				.output(OUTPUT) //
+				.sort();
+		System.out.println(n + " integers sorted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
+		// ensure ascending
+		try (InputStream in = new BufferedInputStream(new FileInputStream(OUTPUT))) {
+			Reader<Integer> reader = serializer.createReader(in);
+			Integer v;
+			int last = Integer.MIN_VALUE;
+			int count = 0;
+			while ((v = reader.read()) != null) {
+				assertTrue(v >= last);
+				last = v;
+				count++;
+			}
+			assertEquals(n, count);
+		}
+		input.delete();
 	}
 
 }
