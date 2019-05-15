@@ -33,20 +33,20 @@ Here's a serializer for a simple format using one 4 byte signed integer per reco
 ```java
 Serializer<Integer> serializer = new DataSerializer<Integer>() {
 
-				@Override
-				public Integer read(DataInputStream dis) throws IOException {
-					try {
-						return dis.readInt();
-					} catch (EOFException e) {
-						return null;
-					}
-				}
+    @Override
+    public Integer read(DataInputStream dis) throws IOException {
+        try {
+           return dis.readInt();
+        } catch (EOFException e) {
+            return null;
+        }
+    }
 
-				@Override
-				public void write(DataOutputStream dos, Integer value) throws IOException {
-					dos.writeInt(value);
-				}
-			};
+    @Override
+    public void write(DataOutputStream dos, Integer value) throws IOException {
+        dos.writeInt(value);
+    }
+};
       
 Sorter 
   .serializer(serializer) //
