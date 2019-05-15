@@ -9,7 +9,15 @@ Sorts very large files (or `InputStream`s) by splitting to many intermediate sma
 * Serialization helpers for lines of strings, Java IO Serialization, DataInputStream based, and fixed length records 
 * Serialization customizable
 
+## Algorithm
+A large file or `InputStream` of records is sorted by:
+* splitting the whole file into smaller segments according to `maxItemsPerFile`
+* each segment is sorted in memory and then written to a file
+* the segment files are then merged in groups according to `maxFilesPerMerge`
+* the merged files are repeatedly merged in groups until only one file remains (with all of the sorted entries)
+
 ## Getting started
+TODO
 
 ## Example using Java IO Serialization
 
