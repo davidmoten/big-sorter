@@ -23,35 +23,110 @@ import com.github.davidmoten.guavamini.Preconditions;
 
 public final class Sorter<T> {
 
-	private final File file;
+	private final InputStream input;
 	private final Serializer<T> serializer;
 	private final File output;
-	private final Comparator<T> comparator;
+	private final Comparator<? super T> comparator;
 	private final int maxFilesPerMerge;
 	private final int maxItemsPerPart;
 
-	public Sorter(File file, Serializer<T> serializer, File output, Comparator<T> comparator, int maxFilesPerMerge,
-			int maxItemsPerPart) {
-		this.file = file;
+	public Sorter(InputStream input, Serializer<T> serializer, File output, Comparator<? super T> comparator,
+			int maxFilesPerMerge, int maxItemsPerFile) {
+		Preconditions.checkNotNull(input, "input must be specified");
+		Preconditions.checkNotNull(serializer, "serializer must be specified");
+		Preconditions.checkNotNull(output, "output must be specified");
+		Preconditions.checkNotNull(comparator, "comparator must be specified");
+		Preconditions.checkArgument(maxFilesPerMerge > 0);
+		Preconditions.checkArgument(maxItemsPerFile > 0);
+		this.input = input;
 		this.serializer = serializer;
 		this.output = output;
 		this.comparator = comparator;
 		this.maxFilesPerMerge = maxFilesPerMerge;
-		this.maxItemsPerPart = maxItemsPerPart;
+		this.maxItemsPerPart = maxItemsPerFile;
 	}
 
-	public void sort() {
-		try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
-			sort(in);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
+	public static <T> Builder<T> serializer(Serializer<T> serializer) {
+		return new Builder<T>(serializer);
+	}
+
+	public static <T> Builder<T> lines() {
+		// TODO
+		return null;
+	}
+
+	public static final class Builder<T> {
+		private InputStream input;
+		private final Serializer<T> serializer;
+		private File output;
+		private Comparator<? super T> comparator;
+		private int maxFilesPerMerge = 100;
+		private int maxItemsPerFile = 100000;
+		private File inputFile;
+
+		Builder(Serializer<T> serializer) {
+			this.serializer = serializer;
 		}
+
+		public Builder<T> input(InputStream input) {
+			Preconditions.checkArgument(this.inputFile == null, "cannot specify both InputStream and File as input");
+			this.input = input;
+			return this;
+		}
+
+		public Builder<T> input(File inputFile) {
+			Preconditions.checkArgument(this.input == null, "cannot specify both InputStream and File as input");
+			this.inputFile = inputFile;
+			return this;
+		}
+
+		public Builder<T> output(File output) {
+			this.output = output;
+			return this;
+		}
+
+		public Builder<T> comparator(Comparator<? super T> comparator) {
+			this.comparator = comparator;
+			return this;
+		}
+
+		public Builder<T> maxFilesPerMerge(int value) {
+			this.maxFilesPerMerge = value;
+			return this;
+		}
+
+		public Builder<T> maxItemsPerFile(int value) {
+			this.maxItemsPerFile = value;
+			return this;
+		}
+
+		public void sort() {
+			if (inputFile != null) {
+				try (InputStream in = new BufferedInputStream(new FileInputStream(inputFile))) {
+					sort(in);
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			} else {
+				sort(input);
+			}
+		}
+
+		private void sort(InputStream input) {
+			Sorter<T> sorter = new Sorter<T>(input, serializer, output, comparator, maxFilesPerMerge, maxItemsPerFile);
+			try {
+				sorter.sort();
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+
 	}
 
-	private void sort(InputStream in) throws IOException {
+	private void sort() throws IOException {
 		// read the input into sorted small files
 		List<File> files = new ArrayList<>();
-		try (Reader<T> reader = serializer.createReader(in)) {
+		try (Reader<T> reader = serializer.createReader(input)) {
 			{
 				int i = 0;
 				List<T> list = new ArrayList<>();

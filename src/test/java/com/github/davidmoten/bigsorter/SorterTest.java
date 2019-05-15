@@ -23,17 +23,17 @@ public class SorterTest {
 	public void test() throws IOException {
 		assertEquals("1234", sort("1432"));
 	}
-	
+
 	@Test
 	public void testEmpty() throws IOException {
 		assertEquals("", sort(""));
 	}
-	
+
 	@Test
 	public void testOne() throws IOException {
 		assertEquals("1", sort("1"));
 	}
-	
+
 	@Test
 	public void testTwo() throws IOException {
 		assertEquals("12", sort("21"));
@@ -43,20 +43,31 @@ public class SorterTest {
 	public void testThree() throws IOException {
 		assertEquals("123", sort("231"));
 	}
-	
+
 	@Test
 	public void testFour() throws IOException {
 		assertEquals("1234", sort("2431"));
 	}
 	
+	@Test
+	public void testDuplicatesPreserved() throws IOException {
+		assertEquals("122234", sort("242312"));
+	}
+
 	private String sort(String s) throws IOException {
 		File f = new File("target/temp.txt");
 		writeStringToFile(s, f);
 		Serializer<Character> serializer = createCharacterSerializer();
 		File output = new File("target/out.txt");
-		Sorter<Character> sorter = new Sorter<Character>(f, serializer, output, (x, y) -> Character.compare(x, y), 2,
-				3);
-		sorter.sort();
+		Sorter //
+				.serializer(serializer) //
+				.comparator((x, y) -> Character.compare(x, y)) //
+				.input(f) //
+				.output(output) //
+				.maxFilesPerMerge(3) //
+				.maxItemsPerFile(2) //
+				.sort();
+
 		return Files.readAllLines(output.toPath()).stream().collect(Collectors.joining("\n"));
 	}
 
