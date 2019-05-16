@@ -4,11 +4,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-class FixedSizeRecordSerializer extends DataSerializer<byte[]> {
+final class FixedSizeRecordSerializer extends DataSerializer<byte[]> {
 
 	private final int size;
 
-	public FixedSizeRecordSerializer(int size) {
+	FixedSizeRecordSerializer(int size) {
 		this.size = size;
 	}
 
