@@ -19,7 +19,7 @@ A large file or `InputStream` of records is sorted by:
 * each segment is sorted in memory and then written to a file
 * the segment files are then merged in groups according to `maxFilesPerMerge`
 * the merged files are repeatedly merged in groups until only one file remains (with all of the sorted entries)
-* the merge step uses a Min Heap (PriorityQueue) for efficiency
+* the merge step uses a Min Heap (`PriorityQueue`) for efficiency
 
 ## Getting started
 TODO
