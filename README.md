@@ -39,6 +39,28 @@ Sorter
   .sort();
 
 ```
+## Example for sorting text lines
+
+```java
+Sorter
+  // set both serializer and natural comparator
+  .serializerTextUtf8()
+  .input(in)
+  .output(out)
+  .sort();
+```
+
+or for a different character set and in reverse order:
+
+```java
+Sorter
+  // set both serializer and natural comparator
+  .serializerText(charset)
+  .comparator(Comparator.reverseOrder())
+  .input(in)
+  .output(out)
+  .sort();
+```
 
 ## Example using a custom Serializer
 Here's a serializer for a simple format using one 4 byte signed integer per record:
