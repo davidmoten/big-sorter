@@ -22,7 +22,14 @@ A large file or `InputStream` of records is sorted by:
 * the merge step uses a Min Heap (`PriorityQueue`) for efficiency
 
 ## Getting started
-TODO
+Add this dependency to your maven pom.xml:
+```xml
+<dependency>
+    <groupId>com.github.davidmoten</groupId>
+    <artifactId>big-sorter</artifactId>
+    <version>VERSION_HERE</version>
+</dependency>
+```
 ## Serialization
 To read records from files or InputStreams and to write records to files we need to specify the *serialization* method to use.
 
