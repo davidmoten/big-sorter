@@ -24,24 +24,11 @@ A large file or `InputStream` of records is sorted by:
 ## Getting started
 TODO
 
-## Example using Java IO Serialization
+## Example for sorting text lines
 
 ```java
 File in = ...
 File out = ...
-Sorter 
-  .serializer(Serializer.<Long>java()) 
-  .comparator(Comparator.naturalOrder()) 
-  .input(in) 
-  .maxFilesPerMerge(100) 
-  .maxItemsPerFile(100000) 
-  .output(out) 
-  .sort();
-
-```
-## Example for sorting text lines
-
-```java
 Sorter
   // set both serializer and natural comparator
   .serializerTextUtf8()
@@ -61,7 +48,19 @@ Sorter
   .output(out)
   .sort();
 ```
+## Example using Java IO Serialization
 
+```java
+Sorter 
+  .serializer(Serializer.<Long>java()) 
+  .comparator(Comparator.naturalOrder()) 
+  .input(in) 
+  .maxFilesPerMerge(100) 
+  .maxItemsPerFile(100000) 
+  .output(out) 
+  .sort();
+
+```
 ## Example using a custom Serializer
 Here's a serializer for a simple format using one 4 byte signed integer per record:
 
