@@ -23,8 +23,10 @@ A large file or `InputStream` of records is sorted by:
 
 ## Getting started
 TODO
+## Serialization
+To read records from files or InputStreams and to write records to files we need to specify the *serialization* method to use.
 
-## Example for sorting text lines
+### Example for sorting text lines
 
 ```java
 File in = ...
@@ -48,7 +50,8 @@ Sorter
   .output(out)
   .sort();
 ```
-## Example using Java IO Serialization
+### Example using Java IO Serialization
+If each record has been written to the input file using `ObjectOutputStream` then we specify the *java()* Serializer:
 
 ```java
 Sorter 
@@ -61,8 +64,8 @@ Sorter
   .sort();
 
 ```
-## Example using a custom Serializer
-Here's a serializer for a simple format using one 4 byte signed integer per record:
+### Example using the DataSerializer helper
+If you would like to serializer/deserialize your objects using `DataOutputStream`/`DataInputStream` then extend the `DataSerializer` class as below. This is a good option for many binary formats. 
 
 ```java
 Serializer<Integer> serializer = new DataSerializer<Integer>() {
@@ -89,6 +92,9 @@ Sorter
   .output(out) 
   .sort();
 ``` 
+### Custom serialization
+To fully do your own thing you need to implement the `Serializer` interface.
+
 ## Benchmarks
 
 ```
