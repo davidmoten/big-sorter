@@ -64,16 +64,26 @@ public class FixesSortMain {
         SmallHilbertCurve hc = HilbertCurve.small().bits(10).dimensions(3);
         try (DataInputStream dis = new DataInputStream(
                 new GZIPInputStream(new FileInputStream(file)))) {
-            dis.skip(4);
-            float lat = dis.readFloat();
-            float lon = dis.readFloat();
-            long t = dis.readLong();
-            long a = Math.round((double) ((lat - minLat) / (maxLat - minLat)) * hc.maxOrdinate());
-            long b = Math.round((double) ((lon - minLon) / (maxLon - minLon)) * hc.maxOrdinate());
-            long c = Math.round((double) ((t - minTime) / (maxTime - minTime)) * hc.maxOrdinate());
-            long index = hc.index(a,b,c);
-            System.out.println(index);
-            dis.skip(15);
+            while (true) {
+                dis.skip(4);
+                float lat;
+                try {
+                    lat = dis.readFloat();
+                } catch (EOFException e) {
+                    break;
+                }
+                float lon = dis.readFloat();
+                long t = dis.readLong();
+                long a = Math
+                        .round((double) ((lat - minLat) / (maxLat - minLat)) * hc.maxOrdinate());
+                long b = Math
+                        .round((double) ((lon - minLon) / (maxLon - minLon)) * hc.maxOrdinate());
+                long c = Math
+                        .round((double) ((t - minTime) / (maxTime - minTime)) * hc.maxOrdinate());
+                long index = hc.index(a, b, c);
+                System.out.println(index);
+                dis.skip(15);
+            }
         }
     }
 
