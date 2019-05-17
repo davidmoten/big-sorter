@@ -156,19 +156,19 @@ public class FixesSortMain {
 					if (i % chunk == 0) {
 						dos.writeInt((int) position);
 						dos.writeInt(index);
-						System.out.println(position + ": "+ index);
+						System.out.println(position + ": " + index);
 					}
 					i++;
 					position += recordSize;
 				}
 			}
 		}
-		try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))){
-			dis.skip(4+ 4+6*8);
+		try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
+			dis.skip(4 + 4 + 6 * 8);
 			dis.skip(4);
 			dis.skip(4);
 			TreeMap<Integer, Integer> tree = new TreeMap<>();
-			for (int i = 0;i < numIndexEntries;i++) {
+			for (int i = 0; i < numIndexEntries; i++) {
 				int position = dis.readInt();
 				int index = dis.readInt();
 				tree.put(index, position);
