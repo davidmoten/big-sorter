@@ -3,6 +3,7 @@ package com.github.davidmoten.bigsorter;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
+import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
 
 import org.davidmoten.hilbert.HilbertCurve;
@@ -66,10 +68,13 @@ public class FixesSortMain {
 			System.out.println("maxTime=" + maxTime);
 		}
 
-		SmallHilbertCurve hc = HilbertCurve.small().bits(10).dimensions(3);
+		int bits = 10;
+		int dimensions = 3;
+		SmallHilbertCurve hc = HilbertCurve.small().bits(bits).dimensions(dimensions);
 		byte[] buffer = new byte[35];
 		ByteBuffer bb = ByteBuffer.wrap(buffer);
 		File output = new File("target/output");
+		long count = 0;
 		try ( //
 				OutputStream out = new BufferedOutputStream(new FileOutputStream(output));
 				DataInputStream dis = new DataInputStream(
@@ -90,12 +95,15 @@ public class FixesSortMain {
 				int index = (int) hc.index(a, b, c);
 				out.write(buffer);
 				out.write(intToBytes(index));
+				count++;
 			}
 		}
-		Serializer<byte[]> ser = Serializer.fixedSizeRecord(39);
+
+		int recordSize = 39;
+		Serializer<byte[]> ser = Serializer.fixedSizeRecord(recordSize);
 		Comparator<byte[]> comparator = (x, y) -> {
-			int indexX = getInt(x, 35);
-			int indexY = getInt(y, 35);
+			int indexX = getInt(x, recordSize - 4);
+			int indexY = getInt(y, recordSize - 4);
 			return Integer.compare(indexX, indexY);
 		};
 		File output2 = new File("target/output-sorted");
@@ -106,13 +114,65 @@ public class FixesSortMain {
 				.output(output2) //
 				.sort();
 		System.out.println("done");
+		{
+			System.out.println("first 10 hilbert curve indexes of output:");
+			Reader<byte[]> r = ser.createReader(new FileInputStream(output2));
+			for (int i = 0; i < 10; i++) {
+				byte[] b = r.read();
+				int index = getInt(b, 35);
+				System.out.println(index);
+			}
+		}
 
-		System.out.println("first 10 hilbert curve indexes of output:");
-		Reader<byte[]> r = ser.createReader(new FileInputStream(output2));
-		for (int i = 0; i < 10; i++) {
-			byte[] b = r.read();
-			int index = getInt(b, 35);
-			System.out.println(index);
+		int numIndexEntries = 10000;
+		long chunk = count / numIndexEntries;
+
+		File idx = new File("target/output-sorted.idx");
+		try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(idx))) {
+			dos.writeInt(bits);
+			dos.writeInt(dimensions);
+			dos.writeDouble(minLat);
+			dos.writeDouble(maxLat);
+			dos.writeDouble(minLon);
+			dos.writeDouble(maxLon);
+			dos.writeDouble(minTime);
+			dos.writeDouble(maxTime);
+
+			dos.writeInt(numIndexEntries);
+			// write 0 for int position
+			// write 1 for long position
+			dos.writeInt(0);
+			// write index entries
+			{
+				Reader<byte[]> r = ser.createReader(new FileInputStream(output2));
+				long i = 0;
+				long position = 0;
+				for (;;) {
+					byte[] b = r.read();
+					if (b == null) {
+						break;
+					}
+					int index = getInt(b, 35);
+					if (i % chunk == 0) {
+						dos.writeInt((int) position);
+						dos.writeInt(index);
+						System.out.println(position + ": "+ index);
+					}
+					i++;
+					position += recordSize;
+				}
+			}
+		}
+		try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))){
+			dis.skip(4+ 4+6*8);
+			dis.skip(4);
+			dis.skip(4);
+			TreeMap<Integer, Integer> tree = new TreeMap<>();
+			for (int i = 0;i < numIndexEntries;i++) {
+				int position = dis.readInt();
+				int index = dis.readInt();
+				tree.put(index, position);
+			}
 		}
 	}
 
