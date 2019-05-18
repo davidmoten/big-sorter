@@ -35,9 +35,7 @@ final class CsvSerializer implements Serializer<CSVRecord> {
                     it = format.parse(new InputStreamReader(in, charset)).iterator();
                 }
                 if (it.hasNext()) {
-                    CSVRecord v = it.next();
-                    System.out.println(v);
-                    return v;
+                    return it.next();
                 } else {
                     return null;
                 }
@@ -54,20 +52,24 @@ final class CsvSerializer implements Serializer<CSVRecord> {
         return new Writer<CSVRecord>() {
 
             CSVPrinter printer;
+            private PrintStream ps;
 
             @Override
             public void write(CSVRecord value) throws IOException {
-                System.out.println("write: "+ value);
                 if (printer == null) {
                     Set<String> headers = value.toMap().keySet();
-                    printer = format.withHeader(headers.toArray(new String[] {}))
-                            .print(new PrintStream(out, false, charset.name()));
+                    ps = new PrintStream(out, false, charset.name());
+                    printer = format.print(ps);
+                    printer.printRecord(headers);
                 }
                 printer.printRecord(value);
             }
 
             @Override
             public void close() throws IOException {
+                if (ps != null) {
+                    ps.flush();
+                }
             }
 
         };

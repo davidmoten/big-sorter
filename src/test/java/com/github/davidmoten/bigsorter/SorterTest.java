@@ -318,13 +318,12 @@ public class SorterTest {
 
     @Test
     public void testCsv() throws IOException {
-        String s = "word1, number, word2\r\n\"a\",12,\"hello\"\r\n\"joy\",8,\"there\"";
+        String s = "word1,number,word2\n\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
-        Serializer<CSVRecord> ser = Serializer.csv(CSVFormat.DEFAULT.withFirstRecordAsHeader(),
+        Serializer<CSVRecord> ser = Serializer.csv(
+                CSVFormat.DEFAULT.withFirstRecordAsHeader().withRecordSeparator("\n"),
                 StandardCharsets.UTF_8);
         Comparator<CSVRecord> comparator = (x, y) -> {
-            System.out.println("comparing " + x + " and\n" + y);
-            assertTrue(x.isMapped("number"));
             int a = Integer.parseInt(x.get("number"));
             int b = Integer.parseInt(y.get("number"));
             return Integer.compare(a, b);
