@@ -5,6 +5,8 @@
 
 Sorts very large files (or `InputStream`s) by splitting to many intermediate small sorted files and merging.
 
+Status: *deployed to Maven Central*
+
 ## Features
 
 * Easy to use builder

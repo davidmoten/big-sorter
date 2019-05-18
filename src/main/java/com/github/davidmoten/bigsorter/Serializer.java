@@ -5,25 +5,32 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
+
 public interface Serializer<T> {
 
-	Reader<T> createReader(InputStream in);
+    Reader<T> createReader(InputStream in);
 
-	Writer<T> createWriter(OutputStream out);
+    Writer<T> createWriter(OutputStream out);
 
-	public static Serializer<String> linesUtf8() {
-		return LinesSerializer.LINES_UTF8;
-	}
+    public static Serializer<String> linesUtf8() {
+        return LinesSerializer.LINES_UTF8;
+    }
 
-	public static Serializer<String> lines(Charset charset) {
-		return new LinesSerializer(charset);
-	}
-	
-	public static <T extends Serializable> Serializer<T> java() {
-		return JavaSerializer.instance();
-	}
-	
-	public static Serializer<byte[]> fixedSizeRecord(int size) {
-		return new FixedSizeRecordSerializer(size);
-	}
+    public static Serializer<String> lines(Charset charset) {
+        return new LinesSerializer(charset);
+    }
+
+    public static <T extends Serializable> Serializer<T> java() {
+        return JavaSerializer.instance();
+    }
+
+    public static Serializer<byte[]> fixedSizeRecord(int size) {
+        return new FixedSizeRecordSerializer(size);
+    }
+
+    public static Serializer<CSVRecord> csv(CSVFormat format, Charset charset) {
+        return new CsvSerializer(format, charset);
+    }
 }
