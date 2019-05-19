@@ -12,7 +12,12 @@ Status: *deployed to Maven Central*
 * Easy to use builder
 * Single threaded
 * Sorts one billion integers from a file to a new file in 444s 
-* Serialization helpers for lines of strings, Java IO Serialization, DataInputStream based, and fixed length records 
+* Serialization helpers for 
+  * lines of strings
+  * Java IO Serialization
+  * DataInputStream base
+  * fixed length records 
+  * CSV
 * Serialization customizable
 
 ## Algorithm
@@ -59,6 +64,12 @@ Sorter
   .output(out)
   .sort();
 ```
+### Example for sorting CSV
+Given the CSV file below, we will sort on the second column (the "number" column):
+```
+
+```
+
 ### Example using Java IO Serialization
 If each record has been written to the input file using `ObjectOutputStream` then we specify the *java()* Serializer:
 
