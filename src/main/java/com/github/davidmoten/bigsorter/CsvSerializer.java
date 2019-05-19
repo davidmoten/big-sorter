@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -64,7 +64,11 @@ final class CsvSerializer implements Serializer<CSVRecord> {
                 if (printer == null) {
                     ps = new PrintStream(out, false, charset.name());
                     printer = format.print(ps);
-                    printer.printRecord(value.getHeaders());
+                    // print header line
+                    List<String> h = value.getHeaders();
+                    if (!h.isEmpty()) {
+                        printer.printRecord(h);
+                    }
                 }
                 printer.printRecord(value);
             }
