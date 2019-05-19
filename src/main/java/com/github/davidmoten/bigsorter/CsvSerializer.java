@@ -28,11 +28,13 @@ final class CsvSerializer implements Serializer<CSVRecord> {
         return new Reader<CSVRecord>() {
 
             Iterator<CSVRecord> it;
+            InputStreamReader isr;
 
             @Override
             public CSVRecord read() throws IOException {
                 if (it == null) {
-                    it = format.parse(new InputStreamReader(in, charset)).iterator();
+                    isr = new InputStreamReader(in, charset);
+                    it = format.parse(isr).iterator();
                 }
                 if (it.hasNext()) {
                     return it.next();
@@ -43,6 +45,9 @@ final class CsvSerializer implements Serializer<CSVRecord> {
 
             @Override
             public void close() throws IOException {
+                if (isr != null) {
+                    isr.close();
+                }
             }
         };
     }
