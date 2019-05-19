@@ -123,9 +123,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.commons</groupId>
+            <groupId>com.github.davidmoten</groupId>
             <artifactId>commons-csv</artifactId>
-            <version>1.6</version>
+            <version>1.6.001</version>
             <optional>true</optional>
         </dependency>
 

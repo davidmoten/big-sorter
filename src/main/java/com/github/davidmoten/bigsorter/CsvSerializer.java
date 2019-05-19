@@ -62,10 +62,9 @@ final class CsvSerializer implements Serializer<CSVRecord> {
             @Override
             public void write(CSVRecord value) throws IOException {
                 if (printer == null) {
-                    Set<String> headers = value.toMap().keySet();
                     ps = new PrintStream(out, false, charset.name());
                     printer = format.print(ps);
-                    printer.printRecord(headers);
+                    printer.printRecord(value.getHeaders());
                 }
                 printer.printRecord(value);
             }
