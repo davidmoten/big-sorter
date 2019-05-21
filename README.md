@@ -37,6 +37,16 @@ Add this dependency to your maven pom.xml:
     <version>VERSION_HERE</version>
 </dependency>
 ```
+If you want to sort csv add this extra dependency:
+```xml
+<dependency>
+    <groupId>com.github.davidmoten</groupId>
+    <artifactId>commons-csv</artifactId>
+    <version>1.6.001</version>
+</dependency>
+
+```
+
 ## Serialization
 To read records from files or InputStreams and to write records to files we need to specify the *serialization* method to use.
 
