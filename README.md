@@ -98,6 +98,12 @@ Sorter
   .output(outputFile)
   .sort();
 ```
+The result is:
+```
+name,number,cost
+ALLEN KEY 5MM,27,3.80
+WIPER BLADE,35,12.55
+```
 
 ### Example using Java IO Serialization
 If each record has been written to the input file using `ObjectOutputStream` then we specify the *java()* Serializer:
