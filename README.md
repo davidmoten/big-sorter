@@ -77,7 +77,26 @@ Sorter
 ### Example for sorting CSV
 Given the CSV file below, we will sort on the second column (the "number" column):
 ```
+name,number,cost
+WIPER BLADE,35,12.55
+ALLEN KEY 5MM,27,3.80
+```
 
+```java
+Serializer<CSVRecord> serializer = Serializer.csv(
+        CSVFormat.DEFAULT.withFirstRecordAsHeader().withRecordSeparator("\n"),
+        StandardCharsets.UTF_8);
+Comparator<CSVRecord> comparator = (x, y) -> {
+    int a = Integer.parseInt(x.get("number"));
+    int b = Integer.parseInt(y.get("number"));
+    return Integer.compare(a, b);
+};
+Sorter 
+  .serializer(serializer) 
+  .comparator(comparator) 
+  .input(inputFile) 
+  .output(outputFile)
+  .sort();
 ```
 
 ### Example using Java IO Serialization
