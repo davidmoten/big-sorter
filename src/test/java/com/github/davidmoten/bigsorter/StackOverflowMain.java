@@ -5,7 +5,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
+
+import org.apache.commons.csv.CSVFormat;
 
 public class StackOverflowMain {
 
@@ -26,6 +29,12 @@ public class StackOverflowMain {
             }
         }
         System.out.println((System.currentTimeMillis() - t) / 1000.0 + "s");
+        Sorter.serializer(Serializer.csv(CSVFormat.DEFAULT.withRecordSeparator('\n'), //
+                StandardCharsets.UTF_8)) //
+                .comparator((x, y) -> Integer.compare(Integer.parseInt(x.get(10)),
+                        Integer.parseInt(y.get(10)))) //
+                .input(input) //
+                .output(new File("target/output.txt"));
     }
 
 }
