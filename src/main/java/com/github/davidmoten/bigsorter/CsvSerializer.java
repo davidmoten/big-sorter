@@ -65,7 +65,7 @@ final class CsvSerializer implements Serializer<CSVRecord> {
                     ps = new PrintStream(out, false, charset.name());
                     printer = format.print(ps);
                     // print header line
-                    List<String> h = value.getHeaders();
+                    List<String> h = value.getParser().getHeaderNames();
                     if (!h.isEmpty()) {
                         printer.printRecord(h);
                     }
