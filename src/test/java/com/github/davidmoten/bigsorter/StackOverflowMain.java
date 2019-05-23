@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
@@ -12,7 +13,7 @@ import org.apache.commons.csv.CSVFormat;
 
 public class StackOverflowMain {
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         long t = System.currentTimeMillis();
         File input = new File("target/input.csv");
         try (PrintStream p = new PrintStream(
@@ -34,7 +35,8 @@ public class StackOverflowMain {
                 .comparator((x, y) -> Integer.compare(Integer.parseInt(x.get(10)),
                         Integer.parseInt(y.get(10)))) //
                 .input(input) //
-                .output(new File("target/output.txt"));
+                .output(new File("target/output.txt")) //
+                .sort();
     }
 
 }
