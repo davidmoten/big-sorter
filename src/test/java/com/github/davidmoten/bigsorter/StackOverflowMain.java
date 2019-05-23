@@ -2,7 +2,6 @@ package com.github.davidmoten.bigsorter;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -11,6 +10,9 @@ import java.util.Random;
 
 import org.apache.commons.csv.CSVFormat;
 
+/**
+ * Code as answer for <a href="https://stackoverflow.com/questions/6590953/any-quick-sorting-for-a-huge-csv-file">stackoverflow issue</a>
+ */
 public class StackOverflowMain {
 
     public static void main(String[] args) throws IOException {
@@ -30,6 +32,8 @@ public class StackOverflowMain {
             }
         }
         System.out.println((System.currentTimeMillis() - t) / 1000.0 + "s");
+        System.out.println("starting sort");
+        t = System.currentTimeMillis();
         Sorter.serializer(Serializer.csv(CSVFormat.DEFAULT.withRecordSeparator('\n'), //
                 StandardCharsets.UTF_8)) //
                 .comparator((x, y) -> Integer.compare(Integer.parseInt(x.get(10)),
@@ -37,6 +41,7 @@ public class StackOverflowMain {
                 .input(input) //
                 .output(new File("target/output.txt")) //
                 .sort();
+        System.out.println((System.currentTimeMillis() - t) / 1000.0 + "s");
     }
 
 }
