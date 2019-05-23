@@ -42,7 +42,7 @@ If you want to sort csv add this extra dependency:
 <dependency>
     <groupId>com.github.davidmoten</groupId>
     <artifactId>commons-csv</artifactId>
-    <version>1.6.001</version>
+    <version>1.6.002</version>
 </dependency>
 ```
 The above csv dependency will be switched out for Apache [commons-csv](https://github.com/apache/commons-csv) once [CVS-239](https://issues.apache.org/jira/browse/CSV-239) is resolved (should be sorted in commons-csv 1.7).
