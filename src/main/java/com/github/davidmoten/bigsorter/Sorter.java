@@ -233,7 +233,7 @@ public final class Sorter<T> {
                 output.toPath(), //
                 StandardCopyOption.ATOMIC_MOVE, //
                 StandardCopyOption.REPLACE_EXISTING);
-        log("sort completed in " + (System.currentTimeMillis() - time) / 1000.0 + "s");
+        log("sort of " + count + " records completed in " + (System.currentTimeMillis() - time) / 1000.0 + "s");
         return output;
     }
 

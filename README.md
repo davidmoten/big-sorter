@@ -162,7 +162,24 @@ Sorter
   .output(out)
   .sort();
 ```
+You can use the `.loggerStdOut()` method in the builder and you will get timestamped output written to the console:
 
+```
+2019-05-25 09:12:59.4+1000 starting sort
+2019-05-25 09:13:03.2+1000 total=100000, sorted 100000 records to file big-sorter2118475291065234969 in 1.787s
+2019-05-25 09:13:05.9+1000 total=200000, sorted 100000 records to file big-sorter2566930097970845433 in 2.240s
+2019-05-25 09:13:08.9+1000 total=300000, sorted 100000 records to file big-sorter6018566301838556627 in 2.243s
+2019-05-25 09:13:11.9+1000 total=400000, sorted 100000 records to file big-sorter4803313760593338955 in 0.975s
+2019-05-25 09:13:14.3+1000 total=500000, sorted 100000 records to file big-sorter9199236260699264566 in 0.962s
+2019-05-25 09:13:16.7+1000 total=600000, sorted 100000 records to file big-sorter2064358954108583653 in 0.989s
+2019-05-25 09:13:19.1+1000 total=700000, sorted 100000 records to file big-sorter6934618230625335397 in 0.964s
+2019-05-25 09:13:21.5+1000 total=800000, sorted 100000 records to file big-sorter5759615033643361667 in 0.975s
+2019-05-25 09:13:24.1+1000 total=900000, sorted 100000 records to file big-sorter6808081723248409045 in 0.948s
+2019-05-25 09:13:25.8+1000 total=1000000, sorted 100000 records to file big-sorter2456434677554311136 in 0.983s
+2019-05-25 09:13:25.8+1000 completed inital split and sort, starting merge
+2019-05-25 09:13:25.8+1000 merging 10 files
+2019-05-25 09:13:36.8+1000 sort of 1000000 records completed in 37.456s
+```
 ## Benchmarks
 
 ```
