@@ -18,7 +18,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -139,13 +138,17 @@ public final class Sorter<T> {
             });
         }
 
-        public void sort() throws IOException {
-            if (inputFile != null) {
-                try (InputStream in = new BufferedInputStream(new FileInputStream(inputFile))) {
-                    sort(in);
+        public void sort() {
+            try {
+                if (inputFile != null) {
+                    try (InputStream in = new BufferedInputStream(new FileInputStream(inputFile))) {
+                        sort(in);
+                    }
+                } else {
+                    sort(input);
                 }
-            } else {
-                sort(input);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -158,7 +161,6 @@ public final class Sorter<T> {
                 throw new UncheckedIOException(e);
             }
         }
-
     }
 
     private void log(String msg, Object... objects) {
@@ -170,8 +172,9 @@ public final class Sorter<T> {
         }
     }
 
-    private void sort() throws IOException {
+    private File sort() throws IOException {
         // read the input into sorted small files
+        long time = System.currentTimeMillis();
         List<File> files = new ArrayList<>();
         log("starting sort");
         try (Reader<T> reader = serializer.createReader(input)) {
@@ -221,6 +224,8 @@ public final class Sorter<T> {
                 output.toPath(), //
                 StandardCopyOption.ATOMIC_MOVE, //
                 StandardCopyOption.REPLACE_EXISTING);
+        log("sort completed in " + (System.currentTimeMillis() - time) / 1000.0 + "s");
+        return output;
     }
 
     private File merge(List<File> list) throws IOException {
@@ -293,8 +298,8 @@ public final class Sorter<T> {
         }
     }
 
-    private File nextTempFile() throws IOException {
-        return File.createTempFile("big-sorter", ".bin");
+    private static File nextTempFile() throws IOException {
+        return File.createTempFile("big-sorter", "");
     }
 
 }
