@@ -15,11 +15,16 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.function.Consumer;
 
 import com.github.davidmoten.guavamini.Preconditions;
 
@@ -31,9 +36,10 @@ public final class Sorter<T> {
     private final Comparator<? super T> comparator;
     private final int maxFilesPerMerge;
     private final int maxItemsPerPart;
+    private final Consumer<? super String> log;
 
-    Sorter(InputStream input, Serializer<T> serializer, File output,
-            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile) {
+    Sorter(InputStream input, Serializer<T> serializer, File output, Comparator<? super T> comparator,
+            int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log) {
         Preconditions.checkNotNull(input, "input must be specified");
         Preconditions.checkNotNull(serializer, "serializer must be specified");
         Preconditions.checkNotNull(output, "output must be specified");
@@ -46,6 +52,7 @@ public final class Sorter<T> {
         this.comparator = comparator;
         this.maxFilesPerMerge = maxFilesPerMerge;
         this.maxItemsPerPart = maxItemsPerFile;
+        this.log = log;
     }
 
     public static <T> Builder<T> serializer(Serializer<T> serializer) {
@@ -68,6 +75,7 @@ public final class Sorter<T> {
         private int maxFilesPerMerge = 100;
         private int maxItemsPerFile = 100000;
         private File inputFile;
+        private Consumer<? super String> logger = null;
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
@@ -82,15 +90,13 @@ public final class Sorter<T> {
         }
 
         public Builder<T> input(InputStream input) {
-            Preconditions.checkArgument(this.inputFile == null,
-                    "cannot specify both InputStream and File as input");
+            Preconditions.checkArgument(this.inputFile == null, "cannot specify both InputStream and File as input");
             this.input = input;
             return this;
         }
 
         public Builder<T> input(File inputFile) {
-            Preconditions.checkArgument(this.input == null,
-                    "cannot specify both InputStream and File as input");
+            Preconditions.checkArgument(this.input == null, "cannot specify both InputStream and File as input");
             this.inputFile = inputFile;
             return this;
         }
@@ -115,6 +121,11 @@ public final class Sorter<T> {
             return this;
         }
 
+        public Builder<T> logger(Consumer<? super String> logger) {
+            this.logger = logger;
+            return this;
+        }
+
         public void sort() throws IOException {
             if (inputFile != null) {
                 try (InputStream in = new BufferedInputStream(new FileInputStream(inputFile))) {
@@ -126,8 +137,8 @@ public final class Sorter<T> {
         }
 
         private void sort(InputStream input) {
-            Sorter<T> sorter = new Sorter<T>(input, serializer, output, comparator,
-                    maxFilesPerMerge, maxItemsPerFile);
+            Sorter<T> sorter = new Sorter<T>(input, serializer, output, comparator, maxFilesPerMerge, maxItemsPerFile,
+                    logger);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -137,9 +148,17 @@ public final class Sorter<T> {
 
     }
 
+    private void log(String msg, Object... objects) {
+        if (log != null) {
+            String s = String.format(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(DateTimeFormatter.ISO_DATE_TIME) + " " + msg, objects);
+            log.accept(s);
+        }
+    }
+
     private void sort() throws IOException {
         // read the input into sorted small files
         List<File> files = new ArrayList<>();
+        log("starting sort");
         try (Reader<T> reader = serializer.createReader(input)) {
             {
                 int i = 0;
@@ -164,7 +183,7 @@ public final class Sorter<T> {
                 }
             }
         }
-
+        log("completed inital split and sort, starting merge");
         // merge the files in chunks repeatededly until only one remains
         while (files.size() > 1) {
             List<File> nextRound = new ArrayList<>();
@@ -190,6 +209,7 @@ public final class Sorter<T> {
     }
 
     private File merge(List<File> list) throws IOException {
+        log("merging %s " + list.size());
         Preconditions.checkArgument(!list.isEmpty());
         if (list.size() == 1) {
             return list.get(0);
@@ -204,8 +224,7 @@ public final class Sorter<T> {
         File output = nextTempFile();
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output));
                 Writer<T> writer = serializer.createWriter(out)) {
-            PriorityQueue<State<T>> q = new PriorityQueue<>(
-                    (x, y) -> comparator.compare(x.value, y.value));
+            PriorityQueue<State<T>> q = new PriorityQueue<>((x, y) -> comparator.compare(x.value, y.value));
             q.addAll(states);
             while (!q.isEmpty()) {
                 State<T> state = q.poll();
@@ -242,9 +261,12 @@ public final class Sorter<T> {
     }
 
     private File sortAndWriteToFile(List<T> list) throws FileNotFoundException, IOException {
-        Collections.sort(list, comparator);
         File file = nextTempFile();
+        log("sorting %s records", list.size());
+        Collections.sort(list, comparator);
+        log("sort complete");
         writeToFile(list, file);
+        log("sorted records written to file %s", file.getName());
         return file;
     }
 

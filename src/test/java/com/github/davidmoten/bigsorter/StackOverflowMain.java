@@ -16,6 +16,7 @@ import org.apache.commons.csv.CSVFormat;
 public class StackOverflowMain {
 
     public static void main(String[] args) throws IOException {
+        System.out.println("creating input data");
         long t = System.currentTimeMillis();
         File input = new File("target/input.csv");
         try (PrintStream p = new PrintStream(
@@ -40,6 +41,7 @@ public class StackOverflowMain {
                         Integer.parseInt(y.get(10)))) //
                 .input(input) //
                 .output(new File("target/output.txt")) //
+                .logger(System.out::println) //
                 .sort();
         System.out.println((System.currentTimeMillis() - t) / 1000.0 + "s");
     }
