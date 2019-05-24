@@ -262,7 +262,7 @@ public final class Sorter<T> {
                     state.file.delete();
                 }
             }
-            //TODO if an IOException occurs then we should attempt to delete temporary files
+            //TODO if an IOException occurs then we should attempt to close and delete temporary files
         }
         return output;
     }
