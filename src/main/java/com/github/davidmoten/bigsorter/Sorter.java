@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -27,6 +28,7 @@ import java.util.function.Consumer;
 
 import com.github.davidmoten.guavamini.Preconditions;
 
+//NotThreadSafe
 public final class Sorter<T> {
 
     private final InputStream input;
@@ -36,9 +38,11 @@ public final class Sorter<T> {
     private final int maxFilesPerMerge;
     private final int maxItemsPerPart;
     private final Consumer<? super String> log;
+    private long count = 0;
 
-    Sorter(InputStream input, Serializer<T> serializer, File output, Comparator<? super T> comparator,
-            int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log) {
+    Sorter(InputStream input, Serializer<T> serializer, File output,
+            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
+            Consumer<? super String> log) {
         Preconditions.checkNotNull(input, "input must be specified");
         Preconditions.checkNotNull(serializer, "serializer must be specified");
         Preconditions.checkNotNull(output, "output must be specified");
@@ -89,13 +93,15 @@ public final class Sorter<T> {
         }
 
         public Builder<T> input(InputStream input) {
-            Preconditions.checkArgument(this.inputFile == null, "cannot specify both InputStream and File as input");
+            Preconditions.checkArgument(this.inputFile == null,
+                    "cannot specify both InputStream and File as input");
             this.input = input;
             return this;
         }
 
         public Builder<T> input(File inputFile) {
-            Preconditions.checkArgument(this.input == null, "cannot specify both InputStream and File as input");
+            Preconditions.checkArgument(this.input == null,
+                    "cannot specify both InputStream and File as input");
             this.inputFile = inputFile;
             return this;
         }
@@ -130,9 +136,8 @@ public final class Sorter<T> {
 
                 @Override
                 public void accept(String msg) {
-                    System.out.println(
-                            ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(DateTimeFormatter.ISO_DATE_TIME)
-                                    + " " + msg);
+                    System.out.println(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)
+                            .format(DateTimeFormatter.ISO_DATE_TIME) + " " + msg);
                 }
 
             });
@@ -158,8 +163,8 @@ public final class Sorter<T> {
         }
 
         private void sort(InputStream input) {
-            Sorter<T> sorter = new Sorter<T>(input, serializer, output, comparator, maxFilesPerMerge, maxItemsPerFile,
-                    logger);
+            Sorter<T> sorter = new Sorter<T>(input, serializer, output, comparator,
+                    maxFilesPerMerge, maxItemsPerFile, logger);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -170,9 +175,8 @@ public final class Sorter<T> {
 
     private void log(String msg, Object... objects) {
         if (log != null) {
-            String s = String
-                    .format(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(DateTimeFormatter.ISO_DATE_TIME)
-                            + " " + msg, objects);
+            String s = String.format(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)
+                    .format(DateTimeFormatter.ISO_DATE_TIME) + " " + msg, objects);
             log.accept(s);
         }
     }
@@ -180,6 +184,7 @@ public final class Sorter<T> {
     private File sort() throws IOException {
         // read the input into sorted small files
         long time = System.currentTimeMillis();
+        count = 0;
         List<File> files = new ArrayList<>();
         log("starting sort");
         try (Reader<T> reader = serializer.createReader(input)) {
@@ -249,7 +254,8 @@ public final class Sorter<T> {
         File output = nextTempFile();
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output));
                 Writer<T> writer = serializer.createWriter(out)) {
-            PriorityQueue<State<T>> q = new PriorityQueue<>((x, y) -> comparator.compare(x.value, y.value));
+            PriorityQueue<State<T>> q = new PriorityQueue<>(
+                    (x, y) -> comparator.compare(x.value, y.value));
             q.addAll(states);
             while (!q.isEmpty()) {
                 State<T> state = q.poll();
@@ -262,7 +268,8 @@ public final class Sorter<T> {
                     state.file.delete();
                 }
             }
-            //TODO if an IOException occurs then we should attempt to close and delete temporary files
+            // TODO if an IOException occurs then we should attempt to close and delete
+            // temporary files
         }
         return output;
     }
@@ -285,13 +292,19 @@ public final class Sorter<T> {
             this.value = value;
         }
     }
-
+    
     private File sortAndWriteToFile(List<T> list) throws FileNotFoundException, IOException {
         File file = nextTempFile();
-        log("sorting %s records", list.size());
+        long t = System.currentTimeMillis();
         Collections.sort(list, comparator);
         writeToFile(list, file);
-        log("sorted records written to file %s", file.getName());
+        DecimalFormat df = new DecimalFormat("0.000");
+        count += list.size();
+        log("sorted %s records to file %s in %ss, totalRecords=", //
+                count, //
+                list.size(), //
+                file.getName(), //
+                df.format((System.currentTimeMillis() - t) / 1000.0));
         return file;
     }
 
