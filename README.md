@@ -151,6 +151,18 @@ Sorter
 ### Custom serialization
 To fully do your own thing you need to implement the `Serializer` interface.
 
+## Logging
+If you want some insight into the progress of the sort then set a logger in the builder:
+
+```java
+Sorter
+  .serializerTextUtf8()
+  .input(in)
+  .logger(x -> log.info(x))
+  .output(out)
+  .sort();
+```
+
 ## Benchmarks
 
 ```
