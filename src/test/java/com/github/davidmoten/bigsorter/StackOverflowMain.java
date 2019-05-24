@@ -41,7 +41,7 @@ public class StackOverflowMain {
                         Integer.parseInt(y.get(10)))) //
                 .input(input) //
                 .output(new File("target/output.txt")) //
-                .logger(System.out::println) //
+                .loggerStdOut() //
                 .sort();
         System.out.println((System.currentTimeMillis() - t) / 1000.0 + "s");
     }

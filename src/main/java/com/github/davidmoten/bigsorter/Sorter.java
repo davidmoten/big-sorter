@@ -126,6 +126,19 @@ public final class Sorter<T> {
             return this;
         }
 
+        public Builder<T> loggerStdOut() {
+            return logger(new Consumer<String>() {
+
+                @Override
+                public void accept(String msg) {
+                    System.out.println(
+                            ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(DateTimeFormatter.ISO_DATE_TIME)
+                                    + " " + msg);
+                }
+
+            });
+        }
+
         public void sort() throws IOException {
             if (inputFile != null) {
                 try (InputStream in = new BufferedInputStream(new FileInputStream(inputFile))) {
@@ -150,7 +163,9 @@ public final class Sorter<T> {
 
     private void log(String msg, Object... objects) {
         if (log != null) {
-            String s = String.format(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(DateTimeFormatter.ISO_DATE_TIME) + " " + msg, objects);
+            String s = String
+                    .format(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(DateTimeFormatter.ISO_DATE_TIME)
+                            + " " + msg, objects);
             log.accept(s);
         }
     }
@@ -209,7 +224,7 @@ public final class Sorter<T> {
     }
 
     private File merge(List<File> list) throws IOException {
-        log("merging %s " + list.size());
+        log("merging %s ", list.size());
         Preconditions.checkArgument(!list.isEmpty());
         if (list.size() == 1) {
             return list.get(0);
@@ -264,7 +279,6 @@ public final class Sorter<T> {
         File file = nextTempFile();
         log("sorting %s records", list.size());
         Collections.sort(list, comparator);
-        log("sort complete");
         writeToFile(list, file);
         log("sorted records written to file %s", file.getName());
         return file;
