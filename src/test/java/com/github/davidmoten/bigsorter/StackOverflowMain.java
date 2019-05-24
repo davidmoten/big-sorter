@@ -32,9 +32,7 @@ public class StackOverflowMain {
                 p.println();
             }
         }
-        System.out.println((System.currentTimeMillis() - t) / 1000.0 + "s");
-        System.out.println("starting sort");
-        t = System.currentTimeMillis();
+        System.out.println("created input file in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
         Sorter.serializer(Serializer.csv(CSVFormat.DEFAULT.withRecordSeparator('\n'), //
                 StandardCharsets.UTF_8)) //
                 .comparator((x, y) -> Integer.compare(Integer.parseInt(x.get(10)),
@@ -43,7 +41,6 @@ public class StackOverflowMain {
                 .output(new File("target/output.txt")) //
                 .loggerStdOut() //
                 .sort();
-        System.out.println((System.currentTimeMillis() - t) / 1000.0 + "s");
     }
 
 }
