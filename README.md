@@ -60,6 +60,8 @@ Sorter
   // set both serializer and natural comparator
   .serializerTextUtf8()
   .input(in)
+  .maxFilesPerMerge(100) 
+  .maxItemsPerFile(100000) 
   .output(out)
   .sort();
 ```
@@ -114,8 +116,6 @@ Sorter
   .serializer(Serializer.<Long>java()) 
   .comparator(Comparator.naturalOrder()) 
   .input(in) 
-  .maxFilesPerMerge(100) 
-  .maxItemsPerFile(100000) 
   .output(out) 
   .sort();
 
