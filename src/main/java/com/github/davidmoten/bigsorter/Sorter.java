@@ -71,6 +71,7 @@ public final class Sorter<T> {
     }
 
     public static final class Builder<T> {
+        private static final DateTimeFormatter DATE_TIME_PATTERN = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.Sxxxx");
         private InputStream input;
         private final Serializer<T> serializer;
         private File output;
@@ -137,9 +138,8 @@ public final class Sorter<T> {
                 @Override
                 public void accept(String msg) {
                     System.out.println(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)
-                            .format(DateTimeFormatter.ISO_DATE_TIME) + " " + msg);
+                            .format(DATE_TIME_PATTERN) + " " + msg);
                 }
-
             });
         }
 
@@ -175,8 +175,7 @@ public final class Sorter<T> {
 
     private void log(String msg, Object... objects) {
         if (log != null) {
-            String s = String.format(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)
-                    .format(DateTimeFormatter.ISO_DATE_TIME) + " " + msg, objects);
+            String s = String.format(msg, objects);
             log.accept(s);
         }
     }
@@ -239,7 +238,7 @@ public final class Sorter<T> {
     }
 
     private File merge(List<File> list) throws IOException {
-        log("merging %s ", list.size());
+        log("merging %s files", list.size());
         Preconditions.checkArgument(!list.isEmpty());
         if (list.size() == 1) {
             return list.get(0);
@@ -300,7 +299,7 @@ public final class Sorter<T> {
         writeToFile(list, file);
         DecimalFormat df = new DecimalFormat("0.000");
         count += list.size();
-        log("sorted %s records to file %s in %ss, totalRecords=", //
+        log("total=%s, sorted %s records to file %s in %ss", //
                 count, //
                 list.size(), //
                 file.getName(), //

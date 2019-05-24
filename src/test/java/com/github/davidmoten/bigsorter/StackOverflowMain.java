@@ -22,7 +22,7 @@ public class StackOverflowMain {
         try (PrintStream p = new PrintStream(
                 new BufferedOutputStream(new FileOutputStream(input)))) {
             Random r = new Random();
-            for (int i = 0; i < 12_000_000; i++) {
+            for (int i = 0; i < 1_000_000; i++) {
                 for (int j = 0; j < 37; j++) {
                     if (j > 0) {
                         p.print(",");
