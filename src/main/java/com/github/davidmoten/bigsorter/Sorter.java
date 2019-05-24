@@ -138,6 +138,11 @@ public final class Sorter<T> {
             });
         }
 
+        /**
+         * Sorts the input and writes the result to the given output file. If an
+         * {@link IOException} occurs then it is thrown wrapped in
+         * {@link UncheckedIOException}.
+         */
         public void sort() {
             try {
                 if (inputFile != null) {
