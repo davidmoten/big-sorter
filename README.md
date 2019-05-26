@@ -127,14 +127,22 @@ Sorter
 ### Example using the DataSerializer helper
 If you would like to serializer/deserialize your objects using `DataOutputStream`/`DataInputStream` then extend the `DataSerializer` class as below. This is a good option for many binary formats. 
 
-Let's use a format with a person's name and a height in cm. We'll keep it unrealistically simple with a short field for the length of the persons name, the characters of the name, and an integer for the height in cm:
+Let's use a binary format with a person's name and a height in cm. We'll keep it unrealistically simple with a short field for the length of the persons name, the bytes of the name, and an integer for the height in cm:
 
 ```java
+public static final class Person {
+    final String name;
+    final int heightCm;
+    ...
+}
+
 Serializer<Integer> serializer = new DataSerializer<Integer>() {
 
     @Override
     public Person read(DataInputStream dis) throws IOException {
         short length;
+        // only check for EOF on first item. If it happens after then we have a corrupt file 
+        // with incompletely written records
         try {
             length= dis.readShort();
         } catch (EOFException e) {
