@@ -16,9 +16,9 @@ Status: *deployed to Maven Central*
   * lines of strings
   * Java IO Serialization
   * DataInputStream base
-  * fixed length records 
+  * fixed length binary records 
   * CSV
-* Serialization customizable
+* Serialization is customizable
 
 ## Algorithm
 A large file or `InputStream` of records is sorted by:
@@ -26,7 +26,7 @@ A large file or `InputStream` of records is sorted by:
 * each segment is sorted in memory and then written to a file
 * the segment files are then merged in groups according to `maxFilesPerMerge`
 * the merged files are repeatedly merged in groups until only one file remains (with all of the sorted entries)
-* Note that merged groups are merged with merged groups to ensure that we don't start approaching insertion sort computational complexity (O(n<sup>2</sup>).
+* Note that where possible files are merged with simililarly sized files to ensure that we don't start approaching insertion sort computational complexity (O(n<sup>2</sup>).
 * the merge step uses a Min Heap (`PriorityQueue`) for efficiency
 
 ## Getting started
@@ -86,9 +86,13 @@ ALLEN KEY 5MM,27,3.80
 ```
 
 ```java
-Serializer<CSVRecord> serializer = Serializer.csv(
-        CSVFormat.DEFAULT.withFirstRecordAsHeader().withRecordSeparator("\n"),
-        StandardCharsets.UTF_8);
+Serializer<CSVRecord> serializer = 
+  Serializer.csv(
+    CSVFormat
+      .DEFAULT
+      .withFirstRecordAsHeader()
+      .withRecordSeparator("\n"),
+    StandardCharsets.UTF_8);
 Comparator<CSVRecord> comparator = (x, y) -> {
     int a = Integer.parseInt(x.get("number"));
     int b = Integer.parseInt(y.get("number"));
