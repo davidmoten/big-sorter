@@ -62,6 +62,14 @@ public final class Sorter<T> {
         return new Builder<T>(serializer);
     }
 
+    public static <T> Builder<String> serializerLinesUtf8() {
+        return serializer(Serializer.linesUtf8());
+    }
+
+    public static <T> Builder<String> serializerLines(Charset charset) {
+        return serializer(Serializer.lines(charset));
+    }
+
     public static <T> Builder2<String> lines(Charset charset) {
         return serializer(Serializer.lines(charset)).comparator(Comparator.naturalOrder());
     }
@@ -169,7 +177,7 @@ public final class Sorter<T> {
                 }
             });
         }
-        
+
         /**
          * Sorts the input and writes the result to the given output file. If an
          * {@link IOException} occurs then it is thrown wrapped in

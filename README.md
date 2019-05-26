@@ -58,11 +58,11 @@ File in = ...
 File out = ...
 Sorter
   // set both serializer and natural comparator
-  .serializerTextUtf8()
+  .linesUtf8()
   .input(in)
+  .output(out)
   .maxFilesPerMerge(100) 
   .maxItemsPerFile(100000) 
-  .output(out)
   .sort();
 ```
 
@@ -71,7 +71,7 @@ or for a different character set and in reverse order:
 ```java
 Sorter
   // set both serializer and natural comparator
-  .serializerText(charset)
+  .serializerLines(charset)
   .comparator(Comparator.reverseOrder())
   .input(in)
   .output(out)
@@ -160,10 +160,10 @@ If you want some insight into the progress of the sort then set a logger in the 
 
 ```java
 Sorter
-  .serializerTextUtf8()
+  .linesUtf8()
   .input(in)
-  .logger(x -> log.info(x))
   .output(out)
+  .logger(x -> log.info(x))
   .sort();
 ```
 You can use the `.loggerStdOut()` method in the builder and you will get timestamped output written to the console:
