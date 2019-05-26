@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.SecureRandom;
@@ -74,6 +75,11 @@ public class SorterTest {
     @Test
     public void testLines() throws IOException {
         assertEquals("ab\nc\ndef", sortLines("c\ndef\nab"));
+    }
+
+    @Test
+    public void testLinesCustomCharset() throws IOException {
+        assertEquals("ab\nc\ndef", sortLines("c\ndef\nab", StandardCharsets.UTF_8));
     }
 
     @Test
@@ -175,6 +181,18 @@ public class SorterTest {
     private static String sortLines(String s) throws IOException {
         Sorter //
                 .serializerTextUtf8() //
+                .input(s) //
+                .maxFilesPerMerge(3) //
+                .maxItemsPerFile(2) //
+                .output(OUTPUT) //
+                .sort();
+
+        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+    }
+
+    private static String sortLines(String s, Charset charset) throws IOException {
+        Sorter //
+                .serializerText(charset) //
                 .input(s) //
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
@@ -339,6 +357,28 @@ public class SorterTest {
         assertEquals("8", r.read().get(1));
         assertEquals("12", r.read().get(1));
         assertNull(r.read());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidMaxMergeFiles() throws IOException {
+        File input = new File("target/input");
+        input.createNewFile();
+        Sorter.serializerTextUtf8() //
+                .maxFilesPerMerge(-1) //
+                .input(input) //
+                .output(new File("target/output")) //
+                .sort();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidMaxItemsPerFile() throws IOException {
+        File input = new File("target/input");
+        input.createNewFile();
+        Sorter.serializerTextUtf8() //
+                .maxItemsPerFile(-1) //
+                .input(input) //
+                .output(new File("target/output")) //
+                .sort();
     }
 
     static void printOutput() throws IOException {
