@@ -13,7 +13,7 @@ public class MassiveWordSorterMain {
     public static void main(String[] args) throws IOException {
         byte[] newLine = "\n".getBytes(StandardCharsets.UTF_8);
         File input = new File("target/input");
-        long n = 200_000_000;
+        long n =10_000_000;
         try (OutputStream p = new BufferedOutputStream(new FileOutputStream(input))) {
             for (long i = 0; i < n; i++) {
                 p.write(UUID.randomUUID().toString().substring(0, 16)
@@ -23,9 +23,10 @@ public class MassiveWordSorterMain {
         }
         System.out.println("input file size = " + input.length());
         long t = System.currentTimeMillis();
+        File output = new File("target/output");
         Sorter.serializerTextUtf8() //
                 .input(input) //
-                .output(new File("target/output")) //
+                .output(output) //
                 .loggerStdOut() //
                 .sort();
         t = System.currentTimeMillis() - t;
@@ -36,6 +37,9 @@ public class MassiveWordSorterMain {
         double k = ((double) t) / n / Math.log(n);
         long t2 = Math.round(k * numLines * Math.log(numLines));
         System.out.println("to sort 800GB would be " + t2 / 1000 / 3600 + " hours");
+
+        input.delete();
+        output.delete();
 
     }
 }
