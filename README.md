@@ -158,7 +158,7 @@ Serializer<Integer> serializer = new DataSerializer<Integer>() {
       
 Sorter 
   .serializer(serializer) 
-  .comparator((x, y) -> Integer.compare(x.heightCm(), y.heightCm())) 
+  .comparator((x, y) -> Integer.compare(x.heightCm, y.heightCm)) 
   .input(in) 
   .output(out) 
   .sort();
