@@ -132,7 +132,7 @@ Let's use a format with a person's name and a height in cm. We'll keep it unreal
 ```java
 Serializer<Integer> serializer = new DataSerializer<Integer>() {
 
-        @Override
+    @Override
     public Person read(DataInputStream dis) throws IOException {
         short length;
         try {
