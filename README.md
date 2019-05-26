@@ -127,27 +127,38 @@ Sorter
 ### Example using the DataSerializer helper
 If you would like to serializer/deserialize your objects using `DataOutputStream`/`DataInputStream` then extend the `DataSerializer` class as below. This is a good option for many binary formats. 
 
+Let's use a format with a person's name and a height in cm. We'll keep it unrealistically simple with a short field for the length of the persons name, the characters of the name, and an integer for the height in cm:
+
 ```java
 Serializer<Integer> serializer = new DataSerializer<Integer>() {
 
-    @Override
-    public Integer read(DataInputStream dis) throws IOException {
+        @Override
+    public Person read(DataInputStream dis) throws IOException {
+        short length;
         try {
-           return dis.readInt();
+            length= dis.readShort();
         } catch (EOFException e) {
             return null;
         }
+        byte[] bytes = new byte[length];
+        dis.readFully(bytes);
+        String name = new String(bytes, StandardCharsets.UTF_8);
+        int heightCm = dis.readInt();
+        return new Person(name, heightCm);
     }
 
     @Override
-    public void write(DataOutputStream dos, Integer value) throws IOException {
-        dos.writeInt(value);
+    public void write(DataOutputStream dos, Person p) throws IOException {
+        dos.writeShort((short) p.name.length());
+        dos.write(p.name.getBytes(StandardCharsets.UTF_8));
+        dos.writeInt(p.heightCm);
     }
+
 };
       
 Sorter 
   .serializer(serializer) 
-  .comparator((x, y) -> Integer.compare(x, y)) 
+  .comparator((x, y) -> Integer.compare(x.heightCm(), y.heightCm())) 
   .input(in) 
   .output(out) 
   .sort();
