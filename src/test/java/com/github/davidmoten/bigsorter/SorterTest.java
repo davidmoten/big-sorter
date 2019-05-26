@@ -180,11 +180,11 @@ public class SorterTest {
 
     private static String sortLines(String s) throws IOException {
         Sorter //
-                .serializerTextUtf8() //
+                .linesUtf8() //
                 .input(s) //
+                .output(OUTPUT) //
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
-                .output(OUTPUT) //
                 .sort();
 
         return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
@@ -192,11 +192,11 @@ public class SorterTest {
 
     private static String sortLines(String s, Charset charset) throws IOException {
         Sorter //
-                .serializerText(charset) //
+                .lines(charset) //
                 .input(s) //
+                .output(OUTPUT) //
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
-                .output(OUTPUT) //
                 .sort();
 
         return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
@@ -210,9 +210,9 @@ public class SorterTest {
                 .serializer(serializer) //
                 .comparator((x, y) -> Character.compare(x, y)) //
                 .input(f) //
+                .output(OUTPUT) //
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
-                .output(OUTPUT) //
                 .sort();
 
         return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
@@ -363,10 +363,10 @@ public class SorterTest {
     public void testInvalidMaxMergeFiles() throws IOException {
         File input = new File("target/input");
         input.createNewFile();
-        Sorter.serializerTextUtf8() //
-                .maxFilesPerMerge(-1) //
+        Sorter.linesUtf8() //
                 .input(input) //
                 .output(new File("target/output")) //
+                .maxFilesPerMerge(-1) //
                 .sort();
     }
 
@@ -374,10 +374,10 @@ public class SorterTest {
     public void testInvalidMaxItemsPerFile() throws IOException {
         File input = new File("target/input");
         input.createNewFile();
-        Sorter.serializerTextUtf8() //
-                .maxItemsPerFile(-1) //
+        Sorter.linesUtf8() //
                 .input(input) //
                 .output(new File("target/output")) //
+                .maxItemsPerFile(-1) //
                 .sort();
     }
 

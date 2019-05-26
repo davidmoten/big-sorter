@@ -62,16 +62,17 @@ public final class Sorter<T> {
         return new Builder<T>(serializer);
     }
 
-    public static <T> Builder<String> serializerText(Charset charset) {
+    public static <T> Builder2<String> lines(Charset charset) {
         return serializer(Serializer.lines(charset)).comparator(Comparator.naturalOrder());
     }
 
-    public static <T> Builder<String> serializerTextUtf8() {
+    public static <T> Builder2<String> linesUtf8() {
         return serializer(Serializer.linesUtf8()).comparator(Comparator.naturalOrder());
     }
 
     public static final class Builder<T> {
-        private static final DateTimeFormatter DATE_TIME_PATTERN = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.Sxxxx");
+        private static final DateTimeFormatter DATE_TIME_PATTERN = DateTimeFormatter
+                .ofPattern("yyyy-MM-dd HH:mm:ss.Sxxxx");
         private InputStream input;
         private final Serializer<T> serializer;
         private File output;
@@ -85,64 +86,90 @@ public final class Sorter<T> {
             this.serializer = serializer;
         }
 
-        public Builder<T> input(String string, Charset charset) {
+        public Builder2<T> comparator(Comparator<? super T> comparator) {
+            this.comparator = comparator;
+            return new Builder2<T>(this);
+        }
+    }
+
+    public static final class Builder2<T> {
+        private final Builder<T> b;
+
+        Builder2(Builder<T> b) {
+            this.b = b;
+        }
+
+        public Builder3<T> input(String string, Charset charset) {
             return input(new ByteArrayInputStream(string.getBytes(charset)));
         }
 
-        public Builder<T> input(String string) {
+        public Builder3<T> input(String string) {
             return input(string, StandardCharsets.UTF_8);
         }
 
-        public Builder<T> input(InputStream input) {
-            Preconditions.checkArgument(this.inputFile == null,
+        public Builder3<T> input(InputStream input) {
+            Preconditions.checkArgument(b.inputFile == null,
                     "cannot specify both InputStream and File as input");
-            this.input = input;
-            return this;
+            b.input = input;
+            return new Builder3<T>(b);
         }
 
-        public Builder<T> input(File inputFile) {
-            Preconditions.checkArgument(this.input == null,
+        public Builder3<T> input(File inputFile) {
+            Preconditions.checkArgument(b.input == null,
                     "cannot specify both InputStream and File as input");
-            this.inputFile = inputFile;
+            b.inputFile = inputFile;
+            return new Builder3<T>(b);
+        }
+
+    }
+
+    public static final class Builder3<T> {
+        private final Builder<T> b;
+
+        Builder3(Builder<T> b) {
+            this.b = b;
+        }
+
+        public Builder4<T> output(File output) {
+            b.output = output;
+            return new Builder4<T>(b);
+        }
+
+    }
+
+    public static final class Builder4<T> {
+        private final Builder<T> b;
+
+        Builder4(Builder<T> b) {
+            this.b = b;
+        }
+
+        public Builder4<T> maxFilesPerMerge(int value) {
+            b.maxFilesPerMerge = value;
             return this;
         }
 
-        public Builder<T> output(File output) {
-            this.output = output;
+        public Builder4<T> maxItemsPerFile(int value) {
+            b.maxItemsPerFile = value;
             return this;
         }
 
-        public Builder<T> comparator(Comparator<? super T> comparator) {
-            this.comparator = comparator;
+        public Builder4<T> logger(Consumer<? super String> logger) {
+            b.logger = logger;
             return this;
         }
 
-        public Builder<T> maxFilesPerMerge(int value) {
-            this.maxFilesPerMerge = value;
-            return this;
-        }
-
-        public Builder<T> maxItemsPerFile(int value) {
-            this.maxItemsPerFile = value;
-            return this;
-        }
-
-        public Builder<T> logger(Consumer<? super String> logger) {
-            this.logger = logger;
-            return this;
-        }
-
-        public Builder<T> loggerStdOut() {
+        public Builder4<T> loggerStdOut() {
             return logger(new Consumer<String>() {
 
                 @Override
                 public void accept(String msg) {
                     System.out.println(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)
-                            .format(DATE_TIME_PATTERN) + " " + msg);
+                            .format(Builder.DATE_TIME_PATTERN) + " " + msg);
                 }
             });
         }
-
+        
         /**
          * Sorts the input and writes the result to the given output file. If an
          * {@link IOException} occurs then it is thrown wrapped in
@@ -150,12 +177,13 @@ public final class Sorter<T> {
          */
         public void sort() {
             try {
-                if (inputFile != null) {
-                    try (InputStream in = new BufferedInputStream(new FileInputStream(inputFile))) {
+                if (b.inputFile != null) {
+                    try (InputStream in = new BufferedInputStream(
+                            new FileInputStream(b.inputFile))) {
                         sort(in);
                     }
                 } else {
-                    sort(input);
+                    sort(b.input);
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -163,14 +191,15 @@ public final class Sorter<T> {
         }
 
         private void sort(InputStream input) {
-            Sorter<T> sorter = new Sorter<T>(input, serializer, output, comparator,
-                    maxFilesPerMerge, maxItemsPerFile, logger);
+            Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator,
+                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger);
             try {
                 sorter.sort();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
+
     }
 
     private void log(String msg, Object... objects) {
@@ -233,7 +262,8 @@ public final class Sorter<T> {
                 output.toPath(), //
                 StandardCopyOption.ATOMIC_MOVE, //
                 StandardCopyOption.REPLACE_EXISTING);
-        log("sort of " + count + " records completed in " + (System.currentTimeMillis() - time) / 1000.0 + "s");
+        log("sort of " + count + " records completed in "
+                + (System.currentTimeMillis() - time) / 1000.0 + "s");
         return output;
     }
 
@@ -291,7 +321,7 @@ public final class Sorter<T> {
             this.value = value;
         }
     }
-    
+
     private File sortAndWriteToFile(List<T> list) throws FileNotFoundException, IOException {
         File file = nextTempFile();
         long t = System.currentTimeMillis();

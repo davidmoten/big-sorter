@@ -24,7 +24,7 @@ public class MassiveWordSorterMain {
         System.out.println("input file size = " + input.length());
         long t = System.currentTimeMillis();
         File output = new File("target/output");
-        Sorter.serializerTextUtf8() //
+        Sorter.linesUtf8() //
                 .input(input) //
                 .output(output) //
                 .loggerStdOut() //
