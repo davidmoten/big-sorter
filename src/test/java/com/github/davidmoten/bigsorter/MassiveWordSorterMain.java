@@ -1,0 +1,41 @@
+package com.github.davidmoten.bigsorter;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
+public class MassiveWordSorterMain {
+
+    public static void main(String[] args) throws IOException {
+        byte[] newLine = "\n".getBytes(StandardCharsets.UTF_8);
+        File input = new File("target/input");
+        long n = 200_000_000;
+        try (OutputStream p = new BufferedOutputStream(new FileOutputStream(input))) {
+            for (long i = 0; i < n; i++) {
+                p.write(UUID.randomUUID().toString().substring(0, 16)
+                        .getBytes(StandardCharsets.UTF_8));
+                p.write(newLine);
+            }
+        }
+        System.out.println("input file size = " + input.length());
+        long t = System.currentTimeMillis();
+        Sorter.serializerTextUtf8() //
+                .input(input) //
+                .output(new File("target/output")) //
+                .loggerStdOut() //
+                .sort();
+        t = System.currentTimeMillis() - t;
+        // each line is 17 bytes
+        // so numlines = 800GB / 17
+        long numLines = 800000000000L / 17;
+        // calculate time to sort numLines
+        double k = ((double) t) / n / Math.log(n);
+        long t2 = Math.round(k * numLines * Math.log(numLines));
+        System.out.println("to sort 800GB would be " + t2 / 1000 / 3600 + " hours");
+
+    }
+}
