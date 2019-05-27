@@ -428,8 +428,7 @@ public class SorterTest {
         Sorter.linesUtf8() //
                 .input(input) //
                 .output(new File("target/output")) //
-                .maxFilesPerMerge(-1) //
-                .sort();
+                .maxFilesPerMerge(1);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -439,8 +438,7 @@ public class SorterTest {
         Sorter.linesUtf8() //
                 .input(input) //
                 .output(new File("target/output")) //
-                .maxItemsPerFile(-1) //
-                .sort();
+                .maxItemsPerFile(-1);
     }
 
     @Test(expected = UncheckedIOException.class)
