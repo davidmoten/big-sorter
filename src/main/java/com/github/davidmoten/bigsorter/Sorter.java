@@ -155,7 +155,7 @@ public final class Sorter<T> {
         }
 
         public Builder4<T> maxFilesPerMerge(int value) {
-            Preconditions.checkArgument(value > 0, "maxFilesPerMerge must be greater than 0");
+            Preconditions.checkArgument(value > 1, "maxFilesPerMerge must be greater than 1");
             b.maxFilesPerMerge = value;
             return this;
         }
