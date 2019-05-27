@@ -468,7 +468,7 @@ public class SorterTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testFixedSizeRecordInvalidSize() {
-        Serializer.fixedSizeRecord(-1);
+        Serializer.fixedSizeRecord(0);
     }
 
     static void printOutput() throws IOException {
