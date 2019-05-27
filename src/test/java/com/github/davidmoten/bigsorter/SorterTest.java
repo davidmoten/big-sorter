@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -78,6 +79,16 @@ public class SorterTest {
     }
 
     @Test
+    public void testLinesReverse() throws IOException {
+        assertEquals("def\nc\nab", sortLinesReverse("c\ndef\nab"));
+    }
+
+    @Test
+    public void testLinesReverseWithCharset() throws IOException {
+        assertEquals("def\nc\nab", sortLinesReverse("c\ndef\nab", StandardCharsets.UTF_8));
+    }
+
+    @Test
     public void testLinesCustomCharset() throws IOException {
         assertEquals("ab\nc\ndef", sortLines("c\ndef\nab", StandardCharsets.UTF_8));
     }
@@ -123,6 +134,30 @@ public class SorterTest {
         assertEquals(3, reader.read()[0]);
         assertEquals(8, reader.read()[0]);
         assertNull(reader.read());
+    }
+
+    @Test(expected = UncheckedIOException.class)
+    public void testInputFileDoesNotExist() {
+        File input = new File("target/inputDoesNotExist");
+        Sorter.linesUtf8() //
+                .input(input) //
+                .output(OUTPUT) //
+                .sort();
+    }
+
+    @Test(expected = UncheckedIOException.class)
+    public void testInputStreamThrows() {
+        InputStream input = new InputStream() {
+
+            @Override
+            public int read() throws IOException {
+                throw new IOException("boo");
+            }
+        };
+        Sorter.linesUtf8() //
+                .input(input) //
+                .output(OUTPUT) //
+                .sort();
     }
 
     @Test
@@ -181,6 +216,32 @@ public class SorterTest {
     private static String sortLines(String s) throws IOException {
         Sorter //
                 .linesUtf8() //
+                .input(s) //
+                .output(OUTPUT) //
+                .maxFilesPerMerge(3) //
+                .maxItemsPerFile(2) //
+                .sort();
+
+        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+    }
+
+    private static String sortLinesReverse(String s, Charset charset) throws IOException {
+        Sorter //
+                .serializerLines(charset) //
+                .comparator(Comparator.reverseOrder()) //
+                .input(s) //
+                .output(OUTPUT) //
+                .maxFilesPerMerge(3) //
+                .maxItemsPerFile(2) //
+                .sort();
+
+        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+    }
+
+    private static String sortLinesReverse(String s) throws IOException {
+        Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.reverseOrder()) //
                 .input(s) //
                 .output(OUTPUT) //
                 .maxFilesPerMerge(3) //
@@ -380,6 +441,36 @@ public class SorterTest {
                 .output(new File("target/output")) //
                 .maxItemsPerFile(-1) //
                 .sort();
+    }
+
+    @Test(expected = UncheckedIOException.class)
+    public void testJavaSerializerInThrows() throws IOException {
+        InputStream in = new InputStream() {
+
+            @Override
+            public int read() throws IOException {
+                throw new IOException("boo");
+            }
+
+        };
+        Serializer.java().createReader(in).read();
+    }
+
+    @Test(expected = UncheckedIOException.class)
+    public void testJavaSerializerOutThrows() throws IOException {
+        OutputStream out = new OutputStream() {
+
+            @Override
+            public void write(int b) throws IOException {
+                throw new IOException("boo");
+            }
+        };
+        Serializer.java().createWriter(out).write(Integer.valueOf(1));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testFixedSizeRecordInvalidSize() {
+        Serializer.fixedSizeRecord(-1);
     }
 
     static void printOutput() throws IOException {

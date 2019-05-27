@@ -47,8 +47,6 @@ public final class Sorter<T> {
         Preconditions.checkNotNull(serializer, "serializer must be specified");
         Preconditions.checkNotNull(output, "output must be specified");
         Preconditions.checkNotNull(comparator, "comparator must be specified");
-        Preconditions.checkArgument(maxFilesPerMerge > 0);
-        Preconditions.checkArgument(maxItemsPerFile > 0);
         this.input = input;
         this.serializer = serializer;
         this.output = output;
@@ -122,16 +120,12 @@ public final class Sorter<T> {
 
         public Builder3<T> input(InputStream input) {
             Preconditions.checkNotNull(input, "input cannot be null");
-            Preconditions.checkArgument(b.inputFile == null,
-                    "cannot specify both InputStream and File as input");
             b.input = input;
             return new Builder3<T>(b);
         }
 
         public Builder3<T> input(File inputFile) {
             Preconditions.checkNotNull(inputFile, "inputFile cannot be null");
-            Preconditions.checkArgument(b.input == null,
-                    "cannot specify both InputStream and File as input");
             b.inputFile = inputFile;
             return new Builder3<T>(b);
         }
@@ -288,7 +282,6 @@ public final class Sorter<T> {
 
     private File merge(List<File> list) throws IOException {
         log("merging %s files", list.size());
-        Preconditions.checkArgument(!list.isEmpty());
         if (list.size() == 1) {
             return list.get(0);
         }
