@@ -59,6 +59,7 @@ public final class Sorter<T> {
     }
 
     public static <T> Builder<T> serializer(Serializer<T> serializer) {
+        Preconditions.checkNotNull(serializer, "serializer cannot be null");
         return new Builder<T>(serializer);
     }
 
@@ -95,6 +96,7 @@ public final class Sorter<T> {
         }
 
         public Builder2<T> comparator(Comparator<? super T> comparator) {
+            Preconditions.checkNotNull(comparator, "comparator cannot be null");
             this.comparator = comparator;
             return new Builder2<T>(this);
         }
@@ -108,14 +110,18 @@ public final class Sorter<T> {
         }
 
         public Builder3<T> input(String string, Charset charset) {
+            Preconditions.checkNotNull(string, "string cannot be null");
+            Preconditions.checkNotNull(charset, "charset cannot be null");
             return input(new ByteArrayInputStream(string.getBytes(charset)));
         }
 
         public Builder3<T> input(String string) {
+            Preconditions.checkNotNull(string);
             return input(string, StandardCharsets.UTF_8);
         }
 
         public Builder3<T> input(InputStream input) {
+            Preconditions.checkNotNull(input, "input cannot be null");
             Preconditions.checkArgument(b.inputFile == null,
                     "cannot specify both InputStream and File as input");
             b.input = input;
@@ -123,6 +129,7 @@ public final class Sorter<T> {
         }
 
         public Builder3<T> input(File inputFile) {
+            Preconditions.checkNotNull(inputFile, "inputFile cannot be null");
             Preconditions.checkArgument(b.input == null,
                     "cannot specify both InputStream and File as input");
             b.inputFile = inputFile;
@@ -139,6 +146,7 @@ public final class Sorter<T> {
         }
 
         public Builder4<T> output(File output) {
+            Preconditions.checkNotNull(output, "output cannot be null");
             b.output = output;
             return new Builder4<T>(b);
         }
@@ -153,16 +161,19 @@ public final class Sorter<T> {
         }
 
         public Builder4<T> maxFilesPerMerge(int value) {
+            Preconditions.checkArgument(value > 0, "maxFilesPerMerge must be greater than 0");
             b.maxFilesPerMerge = value;
             return this;
         }
 
         public Builder4<T> maxItemsPerFile(int value) {
+            Preconditions.checkArgument(value > 0, "maxItemsPerFile must be greater than 0");
             b.maxItemsPerFile = value;
             return this;
         }
 
         public Builder4<T> logger(Consumer<? super String> logger) {
+            Preconditions.checkNotNull(logger, "logger cannot be null");
             b.logger = logger;
             return this;
         }

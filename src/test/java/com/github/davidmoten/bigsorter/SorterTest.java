@@ -213,6 +213,7 @@ public class SorterTest {
                 .output(OUTPUT) //
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
+                .loggerStdOut() //
                 .sort();
 
         return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
