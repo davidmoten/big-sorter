@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
 
 import org.junit.Test;
 
-class ConcurrentBlockingBufferedInputStreamTest {
+public class ConcurrentBlockingBufferedInputStreamTest {
 
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
