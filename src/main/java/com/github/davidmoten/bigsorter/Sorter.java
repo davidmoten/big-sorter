@@ -176,10 +176,10 @@ public final class Sorter<T> {
             return this;
         }
 
-        public Builder4<T> async() {
-            b.executor = Executors.newSingleThreadExecutor();
-            return this;
-        }
+//        public Builder4<T> async() {
+//            b.executor = Executors.newSingleThreadExecutor();
+//            return this;
+//        }
 
         public Builder4<T> loggerStdOut() {
             return logger(new Consumer<String>() {
@@ -201,7 +201,7 @@ public final class Sorter<T> {
         public void sort() {
             try {
                 if (b.inputFile != null) {
-                    try (InputStream in = openFile(b.inputFile, 32768, b.executor)) {
+                    try (InputStream in = openFile(b.inputFile, 32768*8, b.executor)) {
                         sort(in);
                     }
                 } else {
@@ -217,6 +217,9 @@ public final class Sorter<T> {
                     b.maxItemsPerFile, b.logger, b.executor);
             try {
                 sorter.sort();
+                if (b.executor != null) {
+                    b.executor.shutdown();
+                }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

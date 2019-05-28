@@ -7,7 +7,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 
-public class ConcurrentBlockingBufferedInputStream extends InputStream implements Runnable {
+class ConcurrentBlockingBufferedInputStream extends InputStream implements Runnable {
 
     private final InputStream in;
     private final int bufferSize;
@@ -16,7 +16,7 @@ public class ConcurrentBlockingBufferedInputStream extends InputStream implement
     private ByteBuffer buffer;
     private static final ByteBuffer EMPTY = ByteBuffer.wrap(new byte[1]);
 
-    public ConcurrentBlockingBufferedInputStream(InputStream in, int bufferSize, ExecutorService executor) {
+    ConcurrentBlockingBufferedInputStream(InputStream in, int bufferSize, ExecutorService executor) {
         this.in = in;
         this.bufferSize = bufferSize;
         this.executor = executor;
@@ -52,7 +52,7 @@ public class ConcurrentBlockingBufferedInputStream extends InputStream implement
                 return buffer.get() & 0xff;
             }
         } else {
-            return  buffer.get() & 0xff;
+            return buffer.get() & 0xff;
         }
     }
 
