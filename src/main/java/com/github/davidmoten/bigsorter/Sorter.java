@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import com.github.davidmoten.guavamini.Preconditions;
@@ -39,10 +41,10 @@ public final class Sorter<T> {
     private final int maxItemsPerPart;
     private final Consumer<? super String> log;
     private long count = 0;
+    private ExecutorService executor;
 
-    Sorter(InputStream input, Serializer<T> serializer, File output,
-            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
-            Consumer<? super String> log) {
+    Sorter(InputStream input, Serializer<T> serializer, File output, Comparator<? super T> comparator,
+            int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log, ExecutorService executor) {
         Preconditions.checkNotNull(input, "input must be specified");
         Preconditions.checkNotNull(serializer, "serializer must be specified");
         Preconditions.checkNotNull(output, "output must be specified");
@@ -54,6 +56,7 @@ public final class Sorter<T> {
         this.maxFilesPerMerge = maxFilesPerMerge;
         this.maxItemsPerPart = maxItemsPerFile;
         this.log = log;
+        this.executor = executor;
     }
 
     public static <T> Builder<T> serializer(Serializer<T> serializer) {
@@ -88,6 +91,7 @@ public final class Sorter<T> {
         private int maxItemsPerFile = 100000;
         private File inputFile;
         private Consumer<? super String> logger = null;
+        private ExecutorService executor;
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
@@ -172,13 +176,19 @@ public final class Sorter<T> {
             return this;
         }
 
+        public Builder4<T> async() {
+            b.executor = Executors.newSingleThreadExecutor();
+            return this;
+        }
+
         public Builder4<T> loggerStdOut() {
             return logger(new Consumer<String>() {
 
                 @Override
                 public void accept(String msg) {
-                    System.out.println(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)
-                            .format(Builder.DATE_TIME_PATTERN) + " " + msg);
+                    System.out.println(
+                            ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(Builder.DATE_TIME_PATTERN) + " "
+                                    + msg);
                 }
             });
         }
@@ -191,8 +201,7 @@ public final class Sorter<T> {
         public void sort() {
             try {
                 if (b.inputFile != null) {
-                    try (InputStream in = new BufferedInputStream(
-                            new FileInputStream(b.inputFile))) {
+                    try (InputStream in = openFile(b.inputFile, 32768, b.executor)) {
                         sort(in);
                     }
                 } else {
@@ -204,8 +213,8 @@ public final class Sorter<T> {
         }
 
         private void sort(InputStream input) {
-            Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator,
-                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger);
+            Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator, b.maxFilesPerMerge,
+                    b.maxItemsPerFile, b.logger, b.executor);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -213,6 +222,14 @@ public final class Sorter<T> {
             }
         }
 
+    }
+
+    static InputStream openFile(File file, int bufferSize, ExecutorService executor) throws FileNotFoundException {
+        if (executor == null) {
+            return new BufferedInputStream(new FileInputStream(file), bufferSize);
+        } else {
+            return new ConcurrentBlockingBufferedInputStream(new FileInputStream(file), bufferSize, executor);
+        }
     }
 
     private void log(String msg, Object... objects) {
@@ -275,8 +292,7 @@ public final class Sorter<T> {
                 output.toPath(), //
                 StandardCopyOption.ATOMIC_MOVE, //
                 StandardCopyOption.REPLACE_EXISTING);
-        log("sort of " + count + " records completed in "
-                + (System.currentTimeMillis() - time) / 1000.0 + "s");
+        log("sort of " + count + " records completed in " + (System.currentTimeMillis() - time) / 1000.0 + "s");
         return output;
     }
 
@@ -295,8 +311,7 @@ public final class Sorter<T> {
         File output = nextTempFile();
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output));
                 Writer<T> writer = serializer.createWriter(out)) {
-            PriorityQueue<State<T>> q = new PriorityQueue<>(
-                    (x, y) -> comparator.compare(x.value, y.value));
+            PriorityQueue<State<T>> q = new PriorityQueue<>((x, y) -> comparator.compare(x.value, y.value));
             q.addAll(states);
             while (!q.isEmpty()) {
                 State<T> state = q.poll();
@@ -316,7 +331,7 @@ public final class Sorter<T> {
     }
 
     private State<T> createState(File f) throws IOException {
-        InputStream in = new BufferedInputStream(new FileInputStream(f));
+        InputStream in = openFile(f, 32768, executor);
         Reader<T> reader = serializer.createReader(in);
         T t = reader.readAutoClosing();
         return new State<T>(f, reader, t);
