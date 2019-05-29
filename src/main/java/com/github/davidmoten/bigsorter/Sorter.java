@@ -39,10 +39,11 @@ public final class Sorter<T> {
     private final int maxItemsPerPart;
     private final Consumer<? super String> log;
     private final int bufferSize;
+    private final File tempDirectory; 
     private long count = 0;
 
     Sorter(InputStream input, Serializer<T> serializer, File output, Comparator<? super T> comparator,
-            int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log, int bufferSize) {
+            int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log, int bufferSize, File tempDirectory) {
         Preconditions.checkNotNull(input, "input must be specified");
         Preconditions.checkNotNull(serializer, "serializer must be specified");
         Preconditions.checkNotNull(output, "output must be specified");
@@ -55,6 +56,7 @@ public final class Sorter<T> {
         this.maxItemsPerPart = maxItemsPerFile;
         this.log = log;
         this.bufferSize = bufferSize;
+        this.tempDirectory = tempDirectory;
     }
 
     public static <T> Builder<T> serializer(Serializer<T> serializer) {
@@ -90,6 +92,7 @@ public final class Sorter<T> {
         private File inputFile;
         private Consumer<? super String> logger = null;
         private int bufferSize = 8192;
+        private File tempDirectory = new File(System.getProperty("java.io.tmpdir"));
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
@@ -197,6 +200,12 @@ public final class Sorter<T> {
             return this;
         }
 
+        public Builder4<T> tempDirectory(File directory) {
+            Preconditions.checkNotNull(directory, "tempDirectory cannot be null");
+            b.tempDirectory = directory;
+            return this;
+        }
+
         /**
          * Sorts the input and writes the result to the given output file. If an
          * {@link IOException} occurs then it is thrown wrapped in
@@ -218,7 +227,7 @@ public final class Sorter<T> {
 
         private void sort(InputStream input) {
             Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator, b.maxFilesPerMerge,
-                    b.maxItemsPerFile, b.logger, b.bufferSize);
+                    b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -240,6 +249,9 @@ public final class Sorter<T> {
     }
 
     private File sort() throws IOException {
+        
+        tempDirectory.mkdirs();
+        
         // read the input into sorted small files
         long time = System.currentTimeMillis();
         count = 0;
@@ -373,8 +385,8 @@ public final class Sorter<T> {
         }
     }
 
-    private static File nextTempFile() throws IOException {
-        return File.createTempFile("big-sorter", "");
+    private File nextTempFile() throws IOException {
+        return File.createTempFile("big-sorter", "", tempDirectory);
     }
 
 }

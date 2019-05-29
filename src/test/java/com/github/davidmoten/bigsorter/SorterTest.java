@@ -276,6 +276,7 @@ public class SorterTest {
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
                 .loggerStdOut() //
+                .tempDirectory(new File("target")) //
                 .sort();
 
         return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
@@ -450,6 +451,16 @@ public class SorterTest {
                 .input(input) //
                 .output(new File("target/output")) //
                 .bufferSize(0);
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void testInvalidTempDirectory() throws IOException {
+        File input = new File("target/input");
+        input.createNewFile();
+        Sorter.linesUtf8() //
+                .input(input) //
+                .output(new File("target/output")) //
+                .tempDirectory(null);
     }
 
     @Test(expected = UncheckedIOException.class)

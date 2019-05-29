@@ -22,7 +22,7 @@ public class FixesSortMain {
 
 	public static void main(String[] args) throws IOException {
 		String filename = "2019-05-15.binary-fixes-with-mmsi.gz";
-		File file = new File("/home/dxm/Downloads/" + filename);
+		File file = new File(System.getProperty("user.home") + "/Downloads/" + filename);
 		float minLat = 90;
 		float maxLat = -90;
 		float minLon = 180;
@@ -112,6 +112,7 @@ public class FixesSortMain {
 				.comparator(comparator) //
 				.input(output) //
 				.output(output2) //
+				.loggerStdOut() //
 				.sort();
 		System.out.println("done");
 		{
