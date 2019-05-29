@@ -172,6 +172,10 @@ Sorter
   .output(out) 
   .sort();
 ``` 
+### But my binary file has a header record!
+
+In that case make a type T that can be header or an item and have your serializer return that T object. In your comparator ensure that the header is always sorted to the top and you are sorted.
+
 ### Custom serialization
 To fully do your own thing you need to implement the `Serializer` interface.
 
