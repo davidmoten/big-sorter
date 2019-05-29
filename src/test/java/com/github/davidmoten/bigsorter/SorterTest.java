@@ -258,6 +258,7 @@ public class SorterTest {
                 .output(OUTPUT) //
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
+                .bufferSize(128) //
                 .sort();
 
         return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
@@ -439,6 +440,16 @@ public class SorterTest {
                 .input(input) //
                 .output(new File("target/output")) //
                 .maxItemsPerFile(-1);
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidBufferSize() throws IOException {
+        File input = new File("target/input");
+        input.createNewFile();
+        Sorter.linesUtf8() //
+                .input(input) //
+                .output(new File("target/output")) //
+                .bufferSize(0);
     }
 
     @Test(expected = UncheckedIOException.class)

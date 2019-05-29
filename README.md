@@ -61,8 +61,9 @@ Sorter
   .linesUtf8()
   .input(in)
   .output(out)
-  .maxFilesPerMerge(100) 
-  .maxItemsPerFile(100000) 
+  .maxFilesPerMerge(100) // default is 100
+  .maxItemsPerFile(100000) // default is 100,000
+  .bufferSize(8192) // default is 8192
   .sort();
 ```
 

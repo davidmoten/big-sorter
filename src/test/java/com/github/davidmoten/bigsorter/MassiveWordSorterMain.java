@@ -13,7 +13,7 @@ public class MassiveWordSorterMain {
     public static void main(String[] args) throws IOException {
         byte[] newLine = "\n".getBytes(StandardCharsets.UTF_8);
         File input = new File("target/input");
-        long n = 5_000_000;
+        long n = 10_000_000;
         try (OutputStream p = new BufferedOutputStream(new FileOutputStream(input))) {
             for (long i = 0; i < n; i++) {
                 p.write(UUID.randomUUID().toString().substring(0, 16)
