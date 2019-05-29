@@ -174,7 +174,7 @@ Sorter
 ``` 
 ### But my binary file has a header record!
 
-In that case make a type T that can be header or an item and have your serializer return that T object. In your comparator ensure that the header is always sorted to the top and you are sorted.
+In that case make a type T that can be header or an item and have your serializer return that T object. In your comparator ensure that the header is always sorted to the top and you are done.
 
 ### Custom serialization
 To fully do your own thing you need to implement the `Serializer` interface.
@@ -208,6 +208,10 @@ You can use the `.loggerStdOut()` method in the builder and you will get timesta
 2019-05-25 09:13:25.8+1000 merging 10 files
 2019-05-25 09:13:36.8+1000 sort of 1000000 records completed in 37.456s
 ```
+## Memory usage
+Memory usage is directly linked to the value of the `maxItemsPerFile` parameter which you can set in the builder. Its default is 100000. If too much memory is being used reduce that number and test.
+
+
 ## Benchmarks
 
 ```
