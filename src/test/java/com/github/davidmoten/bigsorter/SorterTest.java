@@ -436,7 +436,7 @@ public class SorterTest {
     }
 
     @Test
-    public void testCsv() throws IOException {
+    public void testCsvWithHeader() throws IOException {
         String s = "word1,number,word2\n\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
         Serializer<CSVRecord> ser = Serializer.csv(
@@ -460,6 +460,32 @@ public class SorterTest {
         assertNull(r.read());
     }
 
+    @Test
+    public void testCsvWithoutHeader() throws IOException {
+        String s = "\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
+        ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
+        Serializer<CSVRecord> ser = Serializer.csv(
+                CSVFormat.DEFAULT.withRecordSeparator("\n"),
+                StandardCharsets.UTF_8);
+        Comparator<CSVRecord> comparator = (x, y) -> {
+            int a = Integer.parseInt(x.get(1));
+            int b = Integer.parseInt(y.get(1));
+            return Integer.compare(a, b);
+        };
+        Sorter //
+                .serializer(ser) //
+                .comparator(comparator) //
+                .input(in) //
+                .output(OUTPUT) //
+                .sort();
+        printOutput();
+        Reader<CSVRecord> r = ser.createReader(new FileInputStream(OUTPUT));
+        assertEquals("8", r.read().get(1));
+        assertEquals("12", r.read().get(1));
+        assertNull(r.read());
+    }
+
+    
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidMaxMergeFiles() throws IOException {
         File input = new File("target/input");
