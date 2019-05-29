@@ -8,7 +8,11 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-public class MassiveWordSorterMain {
+/**
+ * <a href=
+ * "https://superuser.com/questions/1300361/sort-the-contents-of-an-extremely-large-800gb-text-file-on-windows/1441113#1441113">question</a>
+ */
+public class SU_SortTheContentsOfAnExtremelyLargeTextFile800GB {
 
     public static void main(String[] args) throws IOException {
         byte[] newLine = "\n".getBytes(StandardCharsets.UTF_8);
@@ -16,8 +20,7 @@ public class MassiveWordSorterMain {
         long n = 10_000_000;
         try (OutputStream p = new BufferedOutputStream(new FileOutputStream(input))) {
             for (long i = 0; i < n; i++) {
-                p.write(UUID.randomUUID().toString().substring(0, 16)
-                        .getBytes(StandardCharsets.UTF_8));
+                p.write(UUID.randomUUID().toString().substring(0, 16).getBytes(StandardCharsets.UTF_8));
                 p.write(newLine);
             }
         }

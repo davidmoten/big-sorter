@@ -13,7 +13,7 @@ import org.apache.commons.csv.CSVFormat;
 /**
  * Code as answer for <a href="https://stackoverflow.com/questions/6590953/any-quick-sorting-for-a-huge-csv-file">stackoverflow issue</a>
  */
-public class StackOverflowMain {
+public class SO_AnyQuickSortingForAHugeCsvFile {
 
     public static void main(String[] args) throws IOException {
         System.out.println("creating input data");
