@@ -39,11 +39,12 @@ public final class Sorter<T> {
     private final int maxItemsPerPart;
     private final Consumer<? super String> log;
     private final int bufferSize;
-    private final File tempDirectory; 
+    private final File tempDirectory;
     private long count = 0;
 
-    Sorter(InputStream input, Serializer<T> serializer, File output, Comparator<? super T> comparator,
-            int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log, int bufferSize, File tempDirectory) {
+    Sorter(InputStream input, Serializer<T> serializer, File output,
+            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
+            Consumer<? super String> log, int bufferSize, File tempDirectory) {
         Preconditions.checkNotNull(input, "input must be specified");
         Preconditions.checkNotNull(serializer, "serializer must be specified");
         Preconditions.checkNotNull(output, "output must be specified");
@@ -187,9 +188,8 @@ public final class Sorter<T> {
 
                 @Override
                 public void accept(String msg) {
-                    System.out.println(
-                            ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(Builder.DATE_TIME_PATTERN) + " "
-                                    + msg);
+                    System.out.println(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)
+                            .format(Builder.DATE_TIME_PATTERN) + " " + msg);
                 }
             });
         }
@@ -226,8 +226,8 @@ public final class Sorter<T> {
         }
 
         private void sort(InputStream input) {
-            Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator, b.maxFilesPerMerge,
-                    b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory);
+            Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator,
+                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -249,9 +249,9 @@ public final class Sorter<T> {
     }
 
     private File sort() throws IOException {
-        
+
         tempDirectory.mkdirs();
-        
+
         // read the input into sorted small files
         long time = System.currentTimeMillis();
         count = 0;
@@ -304,7 +304,8 @@ public final class Sorter<T> {
                 output.toPath(), //
                 StandardCopyOption.ATOMIC_MOVE, //
                 StandardCopyOption.REPLACE_EXISTING);
-        log("sort of " + count + " records completed in " + (System.currentTimeMillis() - time) / 1000.0 + "s");
+        log("sort of " + count + " records completed in "
+                + (System.currentTimeMillis() - time) / 1000.0 + "s");
         return output;
     }
 
@@ -316,14 +317,15 @@ public final class Sorter<T> {
         List<State<T>> states = new ArrayList<>();
         for (File f : list) {
             State<T> st = createState(f);
-            if (st.value != null) {
-                states.add(st);
-            }
+            // note that st.value will be present otherwise the file would be empty
+            // and an empty file would not be passed to this method
+            states.add(st);
         }
         File output = nextTempFile();
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output), bufferSize);
                 Writer<T> writer = serializer.createWriter(out)) {
-            PriorityQueue<State<T>> q = new PriorityQueue<>((x, y) -> comparator.compare(x.value, y.value));
+            PriorityQueue<State<T>> q = new PriorityQueue<>(
+                    (x, y) -> comparator.compare(x.value, y.value));
             q.addAll(states);
             while (!q.isEmpty()) {
                 State<T> state = q.poll();

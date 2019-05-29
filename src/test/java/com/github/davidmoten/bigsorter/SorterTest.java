@@ -44,6 +44,26 @@ public class SorterTest {
     }
 
     @Test
+    public void testWithLogging() throws IOException {
+        assertEquals("1234", sortLogging("1432"));
+    }
+
+    @Test
+    public void testVaryingLineCount() throws IOException {
+        for (int n = 0; n < 100; n++) {
+            StringBuilder s = new StringBuilder();
+            for (int i = 0; i < n; i++) {
+                if (s.length() > 0) {
+                    s.append("\n");
+                }
+                s.append(n - i);
+            }
+            sortLines(s.toString());
+        }
+        // TODO assert something
+    }
+
+    @Test
     public void testEmpty() throws IOException {
         assertEquals("", sort(""));
     }
@@ -275,8 +295,25 @@ public class SorterTest {
                 .output(OUTPUT) //
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
-                .loggerStdOut() //
                 .tempDirectory(new File("target")) //
+                .sort();
+
+        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+    }
+
+    private static String sortLogging(String s) throws IOException {
+        File f = new File("target/temp.txt");
+        writeStringToFile(s, f);
+        Serializer<Character> serializer = createCharacterSerializer();
+        Sorter //
+                .serializer(serializer) //
+                .comparator((x, y) -> Character.compare(x, y)) //
+                .input(f) //
+                .output(OUTPUT) //
+                .maxFilesPerMerge(3) //
+                .maxItemsPerFile(2) //
+                .tempDirectory(new File("target")) //
+                .loggerStdOut() //
                 .sort();
 
         return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
@@ -442,7 +479,7 @@ public class SorterTest {
                 .output(new File("target/output")) //
                 .maxItemsPerFile(-1);
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidBufferSize() throws IOException {
         File input = new File("target/input");
@@ -452,7 +489,7 @@ public class SorterTest {
                 .output(new File("target/output")) //
                 .bufferSize(0);
     }
-    
+
     @Test(expected = NullPointerException.class)
     public void testInvalidTempDirectory() throws IOException {
         File input = new File("target/input");
