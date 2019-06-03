@@ -1,5 +1,6 @@
 package com.github.davidmoten.bigsorter;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -8,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.TreeMap;
@@ -28,7 +30,6 @@ public class FixesSortMain {
 
         Extremes(float minLat, float maxLat, float minLon, float maxLon, long minTime,
                 long maxTime) {
-            super();
             this.minLat = minLat;
             this.maxLat = maxLat;
             this.minLon = minLon;
@@ -51,7 +52,7 @@ public class FixesSortMain {
         long maxTime = Long.MIN_VALUE;
         int count = 0;
         try (DataInputStream dis = new DataInputStream(
-                new GZIPInputStream(new FileInputStream(input)))) {
+                getInputStream(input))) {
             for (;;) {
                 float lat;
                 try {
@@ -103,15 +104,15 @@ public class FixesSortMain {
             return Integer.compare(indexX, indexY);
         };
         File output = new File("target/output-sorted");
-        Sorter //
-                .serializer(ser) //
-                .comparator(comparator) //
-                .input(input) //
-                .output(output) //
-                .loggerStdOut() //
-                .sort();
-
-        System.out.println("inputSize=" + input.length() + ", outputSize=" + output.length());
+        try (InputStream in = getInputStream(input)) {
+            Sorter //
+                    .serializer(ser) //
+                    .comparator(comparator) //
+                    .input(in) //
+                    .output(output) //
+                    .loggerStdOut() //
+                    .sort();
+        }
 
         printStartIndexes(extremes, hc, ser, output);
 
@@ -176,6 +177,10 @@ public class FixesSortMain {
         }
     }
 
+    private static GZIPInputStream getInputStream(File input) throws IOException, FileNotFoundException {
+        return new GZIPInputStream(new FileInputStream(input));
+    }
+
     private static void printStartIndexes(Extremes extremes, SmallHilbertCurve hc,
             Serializer<byte[]> ser, File output) throws FileNotFoundException, IOException {
         {
@@ -191,6 +196,8 @@ public class FixesSortMain {
 
     private static int getIndex(byte[] x, Extremes e, SmallHilbertCurve hc) {
         ByteBuffer bb = ByteBuffer.wrap(x);
+        // skip mmsi
+        bb.position(4);
         float lat = bb.getFloat();
         float lon = bb.getFloat();
         long t = bb.getLong();
