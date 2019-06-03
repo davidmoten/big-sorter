@@ -1,6 +1,7 @@
 package com.github.davidmoten.bigsorter;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -104,39 +105,69 @@ public class FixesSortMain {
             int indexY = getIndex(y, extremes, hc);
             return Integer.compare(indexX, indexY);
         };
-        File output = new File("target/output-sorted");
+        File sorted = new File("target/output-sorted");
         try (InputStream in = getInputStream(input)) {
             Sorter //
                     .serializer(ser) //
                     .comparator(comparator) //
                     .input(in) //
-                    .output(output) //
+                    .output(sorted) //
                     .loggerStdOut() //
                     .sort();
         }
 
-        printStartIndexes(extremes, hc, ser, output);
+        printStartOfSortedIndexes(extremes, hc, ser, sorted);
 
-        int numIndexEntries = 10;
-        long chunk = count / numIndexEntries;
+        int approximateNumIndexEntries = 10;
 
         // write idx
-        int numIndexes = 0;
         File idx = new File("target/output-sorted.idx");
-        try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(idx))) {
-            dos.writeInt(bits);
-            dos.writeInt(dimensions);
-            dos.writeDouble(minLat);
-            dos.writeDouble(maxLat);
-            dos.writeDouble(minLon);
-            dos.writeDouble(maxLon);
-            dos.writeDouble(minTime);
-            dos.writeDouble(maxTime);
+        writeIdx(recordSize, count, extremes, hc, ser, sorted, approximateNumIndexEntries, idx);
 
-            dos.writeInt(numIndexEntries);
+        // read idx file
+        readAndPrintIndex(idx);
+    }
+
+    private static void readAndPrintIndex(File idx) throws IOException, FileNotFoundException {
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
+            dis.skip(4 + 4 + 6 * 8);
+            int numEntries = dis.readInt();
+            dis.skip(4);
+            TreeMap<Integer, Integer> tree = new TreeMap<>();
+            for (int i = 0; i < numEntries; i++) {
+                int position = dis.readInt();
+                int index = dis.readInt();
+                tree.put(index, position);
+            }
+            for (Entry<Integer, Integer> entry : tree.entrySet()) {
+                System.out.println("index=" + entry.getKey() + ", value=" + entry.getValue());
+            }
+        }
+    }
+
+    private static void writeIdx(int recordSize, int count, Extremes extremes, SmallHilbertCurve hc,
+            Serializer<byte[]> ser, File output, int numIndexEntries, File idx)
+            throws IOException, FileNotFoundException {
+        long chunk = count / numIndexEntries;
+        int numIndexes = 0;
+        try (DataOutputStream dos = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(idx)))) {
+            dos.writeInt(hc.bits());
+            dos.writeInt(hc.dimensions());
+            dos.writeDouble(extremes.minLat);
+            dos.writeDouble(extremes.maxLat);
+            dos.writeDouble(extremes.minLon);
+            dos.writeDouble(extremes.maxLon);
+            dos.writeDouble(extremes.minTime);
+            dos.writeDouble(extremes.maxTime);
+
+            // num index entries
+            dos.writeInt(0);
+
             // write 0 for int position
             // write 1 for long position
             dos.writeInt(0);
+
             // write index entries
             try (InputStream sorted = new BufferedInputStream(new FileInputStream(output))) {
                 Reader<byte[]> r = ser.createReader(sorted);
@@ -172,24 +203,6 @@ public class FixesSortMain {
             rf.seek(4 + 4 + 8 * 6);
             rf.writeInt(numIndexes);
         }
-
-        // read idx file
-        System.out.println("reading idx file, numIndexes=" + numIndexes + ", numIndexEntries="
-                + numIndexEntries);
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
-            dis.skip(4 + 4 + 6 * 8);
-            int numEntries = dis.readInt();
-            dis.skip(4);
-            TreeMap<Integer, Integer> tree = new TreeMap<>();
-            for (int i = 0; i < numEntries; i++) {
-                int position = dis.readInt();
-                int index = dis.readInt();
-                tree.put(index, position);
-            }
-            for (Entry<Integer, Integer> entry : tree.entrySet()) {
-                System.out.println("index=" + entry.getKey() + ", value=" + entry.getValue());
-            }
-        }
     }
 
     private static GZIPInputStream getInputStream(File input)
@@ -197,7 +210,7 @@ public class FixesSortMain {
         return new GZIPInputStream(new FileInputStream(input));
     }
 
-    private static void printStartIndexes(Extremes extremes, SmallHilbertCurve hc,
+    private static void printStartOfSortedIndexes(Extremes extremes, SmallHilbertCurve hc,
             Serializer<byte[]> ser, File output) throws FileNotFoundException, IOException {
         {
             System.out.println("first 10 hilbert curve indexes of output:");
