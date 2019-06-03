@@ -117,7 +117,7 @@ public class FixesSortMain {
 
         printStartIndexes(extremes, hc, ser, output);
 
-        int numIndexEntries = 10000;
+        int numIndexEntries = 10;
         long chunk = count / numIndexEntries;
 
         // write idx
