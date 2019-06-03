@@ -258,25 +258,25 @@ public final class Sorter<T> {
         List<File> files = new ArrayList<>();
         log("starting sort");
         try (Reader<T> reader = serializer.createReader(input)) {
-                int i = 0;
-                List<T> list = new ArrayList<>();
-                while (true) {
-                    T t = reader.read();
-                    if (t != null) {
-                        list.add(t);
-                        i++;
+            int i = 0;
+            List<T> list = new ArrayList<>();
+            while (true) {
+                T t = reader.read();
+                if (t != null) {
+                    list.add(t);
+                    i++;
+                }
+                if (t == null || i == maxItemsPerPart) {
+                    i = 0;
+                    if (list.size() > 0) {
+                        File f = sortAndWriteToFile(list);
+                        files.add(f);
+                        list.clear();
                     }
-                    if (t == null || i == maxItemsPerPart) {
-                        i = 0;
-                        if (list.size() > 0) {
-                            File f = sortAndWriteToFile(list);
-                            files.add(f);
-                            list.clear();
-                        }
-                    }
-                    if (t == null) {
-                        break;
-                    }
+                }
+                if (t == null) {
+                    break;
+                }
             }
         }
         log("completed inital split and sort, starting merge");
