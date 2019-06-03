@@ -148,7 +148,7 @@ public class FixesSortMain {
                     if (b == null) {
                         if (i != 0 && position > 0) {
                             // write the last position if not already written
-                            dos.writeInt((int) position);
+                            dos.writeInt((int) position - recordSize);
                             dos.writeInt(index);
                             numIndexes += 1;
                         }
