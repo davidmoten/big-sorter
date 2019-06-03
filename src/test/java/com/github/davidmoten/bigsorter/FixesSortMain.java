@@ -10,6 +10,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.TreeMap;
@@ -51,8 +53,7 @@ public class FixesSortMain {
         long minTime = Long.MAX_VALUE;
         long maxTime = Long.MIN_VALUE;
         int count = 0;
-        try (DataInputStream dis = new DataInputStream(
-                getInputStream(input))) {
+        try (DataInputStream dis = new DataInputStream(getInputStream(input))) {
             for (;;) {
                 float lat;
                 try {
@@ -122,7 +123,6 @@ public class FixesSortMain {
         // write idx
         int numIndexes = 0;
         File idx = new File("target/output-sorted.idx");
-        int count2 = 0;
         try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(idx))) {
             dos.writeInt(bits);
             dos.writeInt(dimensions);
@@ -138,16 +138,23 @@ public class FixesSortMain {
             // write 1 for long position
             dos.writeInt(0);
             // write index entries
-            {
-                Reader<byte[]> r = ser.createReader(new FileInputStream(output));
+            try (InputStream sorted = new BufferedInputStream(new FileInputStream(output))) {
+                Reader<byte[]> r = ser.createReader(sorted);
                 long i = 0;
                 long position = 0;
+                int index = 0;
                 for (;;) {
                     byte[] b = r.read();
                     if (b == null) {
+                        if (i != 0 && position > 0) {
+                            // write the last position if not already written
+                            dos.writeInt((int) position);
+                            dos.writeInt(index);
+                            numIndexes += 1;
+                        }
                         break;
                     }
-                    int index = getIndex(b, extremes, hc);
+                    index = getIndex(b, extremes, hc);
                     if (i % chunk == 0) {
                         dos.writeInt((int) position);
                         dos.writeInt(index);
@@ -156,20 +163,25 @@ public class FixesSortMain {
                     }
                     i++;
                     position += recordSize;
-                    count2++;
                 }
             }
         }
 
-        System.out.println("count = " + count + ", count2 = " + count2);
+        // overwrite numIndexes with actual value
+        try (RandomAccessFile rf = new RandomAccessFile(idx, "rw")) {
+            rf.seek(4 + 4 + 8 * 6);
+            rf.writeInt(numIndexes);
+        }
 
         // read idx file
         System.out.println("reading idx file, numIndexes=" + numIndexes + ", numIndexEntries="
                 + numIndexEntries);
         try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
-            dis.skip(4 + 4 + 6 * 8 + 4 + 4);
+            dis.skip(4 + 4 + 6 * 8 );
+            int numEntries = dis.readInt();
+            dis.skip(4);
             TreeMap<Integer, Integer> tree = new TreeMap<>();
-            for (int i = 0; i < numIndexEntries; i++) {
+            for (int i = 0; i < numEntries; i++) {
                 int position = dis.readInt();
                 int index = dis.readInt();
                 tree.put(index, position);
@@ -177,7 +189,8 @@ public class FixesSortMain {
         }
     }
 
-    private static GZIPInputStream getInputStream(File input) throws IOException, FileNotFoundException {
+    private static GZIPInputStream getInputStream(File input)
+            throws IOException, FileNotFoundException {
         return new GZIPInputStream(new FileInputStream(input));
     }
 
