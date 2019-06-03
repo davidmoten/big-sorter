@@ -10,10 +10,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
 
@@ -177,7 +177,7 @@ public class FixesSortMain {
         System.out.println("reading idx file, numIndexes=" + numIndexes + ", numIndexEntries="
                 + numIndexEntries);
         try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
-            dis.skip(4 + 4 + 6 * 8 );
+            dis.skip(4 + 4 + 6 * 8);
             int numEntries = dis.readInt();
             dis.skip(4);
             TreeMap<Integer, Integer> tree = new TreeMap<>();
@@ -185,6 +185,9 @@ public class FixesSortMain {
                 int position = dis.readInt();
                 int index = dis.readInt();
                 tree.put(index, position);
+            }
+            for (Entry<Integer, Integer> entry : tree.entrySet()) {
+                System.out.println("index=" + entry.getKey() + ", value=" + entry.getValue());
             }
         }
     }
