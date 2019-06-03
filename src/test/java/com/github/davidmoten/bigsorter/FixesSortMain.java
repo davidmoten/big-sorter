@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,8 +39,10 @@ public class FixesSortMain {
     }
 
     public static void main(String[] args) throws IOException {
+        System.out.println("starting");
         String filename = "2019-05-15.binary-fixes-with-mmsi.gz";
-        File file = new File(System.getProperty("user.home") + "/Downloads/" + filename);
+        int recordSize = 35;
+        File input = new File(System.getProperty("user.home") + "/Downloads/" + filename);
         float minLat = 90;
         float maxLat = -90;
         float minLon = 180;
@@ -48,7 +51,7 @@ public class FixesSortMain {
         long maxTime = Long.MIN_VALUE;
         int count = 0;
         try (DataInputStream dis = new DataInputStream(
-                new GZIPInputStream(new FileInputStream(file)))) {
+                new GZIPInputStream(new FileInputStream(input)))) {
             for (;;) {
                 float lat;
                 try {
@@ -77,7 +80,7 @@ public class FixesSortMain {
                 if (t > maxTime) {
                     maxTime = t;
                 }
-                dis.skip(15);
+                dis.skip(recordSize - 20);
                 count++;
             }
             System.out.println("minLat=" + minLat);
@@ -88,39 +91,37 @@ public class FixesSortMain {
             System.out.println("maxTime=" + maxTime);
         }
         Extremes extremes = new Extremes(minLat, maxLat, minLon, maxLon, minTime, maxTime);
+
+        // sort the input file using the hilbert curve index
         int bits = 10;
         int dimensions = 3;
         SmallHilbertCurve hc = HilbertCurve.small().bits(bits).dimensions(dimensions);
-        int recordSize = 35;
         Serializer<byte[]> ser = Serializer.fixedSizeRecord(recordSize);
         Comparator<byte[]> comparator = (x, y) -> {
             int indexX = getIndex(x, extremes, hc);
             int indexY = getIndex(y, extremes, hc);
             return Integer.compare(indexX, indexY);
         };
-        File output2 = new File("target/output-sorted");
+        File output = new File("target/output-sorted");
         Sorter //
                 .serializer(ser) //
                 .comparator(comparator) //
-                .input(file) //
-                .output(output2) //
+                .input(input) //
+                .output(output) //
                 .loggerStdOut() //
                 .sort();
-        {
-            System.out.println("first 100 hilbert curve indexes of output:");
-            Reader<byte[]> r = ser.createReader(new FileInputStream(output2));
-            for (int i = 0; i < 100; i++) {
-                byte[] b = r.read();
-                int index = getIndex(b, extremes, hc);
-                System.out.println(index);
-            }
-        }
+
+        System.out.println("inputSize=" + input.length() + ", outputSize=" + output.length());
+
+        printStartIndexes(extremes, hc, ser, output);
 
         int numIndexEntries = 10000;
         long chunk = count / numIndexEntries;
 
         // write idx
+        int numIndexes = 0;
         File idx = new File("target/output-sorted.idx");
+        int count2 = 0;
         try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(idx))) {
             dos.writeInt(bits);
             dos.writeInt(dimensions);
@@ -137,7 +138,7 @@ public class FixesSortMain {
             dos.writeInt(0);
             // write index entries
             {
-                Reader<byte[]> r = ser.createReader(new FileInputStream(output2));
+                Reader<byte[]> r = ser.createReader(new FileInputStream(output));
                 long i = 0;
                 long position = 0;
                 for (;;) {
@@ -149,24 +150,41 @@ public class FixesSortMain {
                     if (i % chunk == 0) {
                         dos.writeInt((int) position);
                         dos.writeInt(index);
+                        numIndexes += 1;
+                        i = 0;
                     }
                     i++;
                     position += recordSize;
+                    count2++;
                 }
             }
         }
 
+        System.out.println("count = " + count + ", count2 = " + count2);
+
         // read idx file
-        System.out.println("reading idx file");
+        System.out.println("reading idx file, numIndexes=" + numIndexes + ", numIndexEntries="
+                + numIndexEntries);
         try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
-            dis.skip(4 + 4 + 6 * 8);
-            dis.skip(4);
-            dis.skip(4);
+            dis.skip(4 + 4 + 6 * 8 + 4 + 4);
             TreeMap<Integer, Integer> tree = new TreeMap<>();
             for (int i = 0; i < numIndexEntries; i++) {
                 int position = dis.readInt();
                 int index = dis.readInt();
                 tree.put(index, position);
+            }
+        }
+    }
+
+    private static void printStartIndexes(Extremes extremes, SmallHilbertCurve hc,
+            Serializer<byte[]> ser, File output) throws FileNotFoundException, IOException {
+        {
+            System.out.println("first 10 hilbert curve indexes of output:");
+            Reader<byte[]> r = ser.createReader(new FileInputStream(output));
+            for (int i = 0; i < 10; i++) {
+                byte[] b = r.read();
+                int index = getIndex(b, extremes, hc);
+                System.out.println(index);
             }
         }
     }

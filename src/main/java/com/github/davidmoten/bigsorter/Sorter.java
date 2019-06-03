@@ -258,7 +258,6 @@ public final class Sorter<T> {
         List<File> files = new ArrayList<>();
         log("starting sort");
         try (Reader<T> reader = serializer.createReader(input)) {
-            {
                 int i = 0;
                 List<T> list = new ArrayList<>();
                 while (true) {
@@ -278,7 +277,6 @@ public final class Sorter<T> {
                     if (t == null) {
                         break;
                     }
-                }
             }
         }
         log("completed inital split and sort, starting merge");

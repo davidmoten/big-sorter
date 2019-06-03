@@ -20,11 +20,6 @@ public abstract class DataSerializer<T> implements Serializer<T> {
 			final DataInputStream dis = new DataInputStream(in);
 
 			@Override
-			public void close() throws IOException {
-				dis.close();
-			}
-
-			@Override
 			public T read() throws IOException {
 				try {
 					return DataSerializer.this.read(dis);
@@ -32,7 +27,11 @@ public abstract class DataSerializer<T> implements Serializer<T> {
 					return null;
 				}
 			}
-
+			
+			@Override
+            public void close() throws IOException {
+                dis.close();
+            }
 		};
 	}
 
@@ -43,15 +42,14 @@ public abstract class DataSerializer<T> implements Serializer<T> {
 			final DataOutputStream dos = new DataOutputStream(out);
 
 			@Override
-			public void close() throws IOException {
-				dos.close();
-			}
-
-			@Override
 			public void write(T value) throws IOException {
 				DataSerializer.this.write(dos, value);
 			}
-
+			
+			@Override
+            public void close() throws IOException {
+                dos.close();
+            }
 		};
 	}
 
