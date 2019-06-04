@@ -125,23 +125,22 @@ public class FixesSortMain {
         writeIdx(recordSize, count, extremes, hc, ser, sorted, approximateNumIndexEntries, idx);
 
         // read idx file
-        readAndPrintIndex(idx);
+        TreeMap<Integer, Long> tree = readAndPrintIndex(idx);
+        Index ind = new Index(tree);
     }
 
-    private static void readAndPrintIndex(File idx) throws IOException, FileNotFoundException {
+    private static TreeMap<Integer, Long> readAndPrintIndex(File idx) throws IOException, FileNotFoundException {
         try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
             dis.skip(4 + 4 + 6 * 8);
             int numEntries = dis.readInt();
             dis.skip(4);
-            TreeMap<Integer, Integer> tree = new TreeMap<>();
+            TreeMap<Integer, Long> tree = new TreeMap<>();
             for (int i = 0; i < numEntries; i++) {
                 int position = dis.readInt();
                 int index = dis.readInt();
-                tree.put(index, position);
+                tree.put(index, (long) position);
             }
-            for (Entry<Integer, Integer> entry : tree.entrySet()) {
-                System.out.println("index=" + entry.getKey() + ", value=" + entry.getValue());
-            }
+            return tree;
         }
     }
 
