@@ -55,5 +55,11 @@ public final class Index {
         }
         return list;
     }
+    
+    private static long[] ordinates(double[] d) {
+        long[] x = new long[d.length];
+        
+        return x;
+    }
 
 }
