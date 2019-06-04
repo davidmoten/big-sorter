@@ -6,26 +6,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeMap;
 
-import org.davidmoten.hilbert.HilbertCurve;
 import org.davidmoten.hilbert.Range;
-import org.davidmoten.hilbert.SmallHilbertCurve;
 
-public class Index {
+public final class Index {
 
-    private final int bits;
-    private final int dimensions;
-    private final double[] mins;
-    private final double[] maxes;
     private final TreeMap<Integer, Long> indexPositions;
-    private final SmallHilbertCurve hc;
 
-    public Index(int bits, int dimensions, double[] mins, double[] maxes, TreeMap<Integer, Long> indexPositions) {
-        this.bits = bits;
-        this.dimensions = dimensions;
-        this.mins = mins;
-        this.maxes = maxes;
+    Index(TreeMap<Integer, Long> indexPositions) {
         this.indexPositions = indexPositions;
-        this.hc = HilbertCurve.small().bits(bits).dimensions(dimensions);
     }
 
     /**
@@ -36,7 +24,7 @@ public class Index {
      *            list of ranges in ascending order
      * @return querying ranges based on known index positions
      */
-    public List<PositionRange> fit(List<Range> ranges) {
+    public List<PositionRange> getPositionRanges(List<Range> ranges) {
         List<PositionRange> list = new ArrayList<>();
         for (Range range : ranges) {
             Long startPosition = indexPositions.floorEntry((int) range.low()).getValue();
@@ -59,7 +47,7 @@ public class Index {
                 list.add(p);
             } else {
                 PositionRange last = list.getLast();
-                if (p.overlapsPositionWith(last)) {
+                if (last.overlapsPositionWith(p)) {
                     list.pollLast();
                     list.offer(last.join(p));
                 }
