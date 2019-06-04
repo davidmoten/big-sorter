@@ -126,10 +126,15 @@ public class FixesSortMain {
 
         // read idx file
         TreeMap<Integer, Long> tree = readAndPrintIndex(idx);
-        Index ind = new Index(tree);
+
+        double[] mins = new double[] { extremes.minLat, extremes.minLon, extremes.minTime };
+        double[] maxes = new double[] { extremes.maxLat, extremes.maxLon, extremes.maxTime };
+
+        Index ind = new Index(tree, mins, maxes, bits);
     }
 
-    private static TreeMap<Integer, Long> readAndPrintIndex(File idx) throws IOException, FileNotFoundException {
+    private static TreeMap<Integer, Long> readAndPrintIndex(File idx)
+            throws IOException, FileNotFoundException {
         try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
             dis.skip(4 + 4 + 6 * 8);
             int numEntries = dis.readInt();
