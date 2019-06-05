@@ -2,6 +2,7 @@ package com.github.davidmoten.bigsorter;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -27,8 +28,6 @@ import javax.net.ssl.HttpsURLConnection;
 import org.davidmoten.hilbert.HilbertCurve;
 import org.davidmoten.hilbert.Ranges;
 import org.davidmoten.hilbert.SmallHilbertCurve;
-
-import com.github.davidmoten.bigsorter.FixesSortMain.Record;
 
 public class FixesSortMain {
 
@@ -123,7 +122,7 @@ public class FixesSortMain {
                     .loggerStdOut() //
                     .sort();
         }
-        
+
         {
             System.out.println("checking sort worked");
             try (InputStream in = new BufferedInputStream(new FileInputStream(sorted));
@@ -144,7 +143,7 @@ public class FixesSortMain {
 
         printStartOfSortedIndexes(extremes, hc, ser, sorted);
 
-        int approximateNumIndexEntries = 10000;
+        int approximateNumIndexEntries = 100;
 
         // write idx
         File idx = new File("target/output-sorted.idx");
@@ -152,6 +151,9 @@ public class FixesSortMain {
 
         // read idx file
         TreeMap<Integer, Long> tree = readAndPrintIndex(idx);
+
+        tree.forEach((index, pos) -> System.out.println("index=" + index + "\tpos=" + pos));
+        ;
 
         double[] mins = new double[] { extremes.minLat, extremes.minLon, extremes.minTime };
         double[] maxes = new double[] { extremes.maxLat, extremes.maxLon, extremes.maxTime };
@@ -189,32 +191,48 @@ public class FixesSortMain {
             URL u = new URL(location);
             System.out.println("opening connection to " + u);
             HttpsURLConnection c = (HttpsURLConnection) u.openConnection();
-            c.addRequestProperty("Range", "bytes=" + pr.floorPosition() + "-" + pr.ceilingPosition());
-            int records = 0;
+            String bytesRange = "bytes=" + pr.floorPosition() + "-" + pr.ceilingPosition();
+            System.out.println("Range: " + bytesRange);
+            c.addRequestProperty("Range", bytesRange);
+            final int records;
             System.out.println("getting inputstream");
+            final InputStream in2;
+            try (DataInputStream d = new DataInputStream(new FileInputStream(sorted))) {
+                byte[] bytes2 = new byte[(int) (pr.ceilingPosition() - pr.floorPosition())];
+                d.skip(pr.floorPosition());
+                d.readFully(bytes2);
+                in2 = new ByteArrayInputStream(bytes2);
+            }
             try (InputStream in = c.getInputStream()) {
-                System.out.println("reading from url inputstream");
-                Reader<byte[]> r = ser.createReader(in);
-                byte[] b;
-                while ((b = r.read()) != null) {
-                    Record rec = FixesSortMain.getRecord(b);
-                    System.out.println(rec);
-                    // check is in bounding box
-                    if (rec.lat >= lat2 && rec.lat < lat1 && rec.lon >= lon1 && rec.lon < lon2 && rec.time >= t1
-                            && rec.time < t2) {
-                        records++;
-                    } 
-                    long[] p = ind.ordinates(rec.lat, rec.lon, rec.time);
-                    long ix = ind.hilbertCurve().index(p);
-                    System.out.println("compare "+ ix + " to "+ pr.highIndex());
-//                    if (ix > pr.highIndex()) {
-//                        System.out.println("hit max index");
-//                        break;
-//                    }
-                }
+                records = read(ser, ind, lat1, lon1, t1, lat2, lon2, t2, pr, in2);
             }
             System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");
         }
+    }
+
+    private static int read(Serializer<byte[]> ser, Index ind, float lat1, float lon1, long t1, float lat2, float lon2,
+            long t2, PositionRange pr, InputStream in) throws IOException {
+        System.out.println("reading from url inputstream");
+        Reader<byte[]> r = ser.createReader(in);
+        byte[] b;
+        int records = 0;
+        while ((b = r.read()) != null) {
+            Record rec = FixesSortMain.getRecord(b);
+            System.out.println(rec);
+            // check is in bounding box
+            if (rec.lat >= lat2 && rec.lat < lat1 && rec.lon >= lon1 && rec.lon < lon2 && rec.time >= t1
+                    && rec.time < t2) {
+                records++;
+            }
+            long[] p = ind.ordinates(rec.lat, rec.lon, rec.time);
+            long ix = ind.hilbertCurve().index(p);
+            System.out.println("compare " + ix + " to " + pr.highIndex());
+            // if (ix > pr.highIndex()) {
+            // System.out.println("hit max index");
+            // break;
+            // }
+        }
+        return records;
     }
 
     static TreeMap<Integer, Long> readAndPrintIndex(File idx) throws IOException, FileNotFoundException {
