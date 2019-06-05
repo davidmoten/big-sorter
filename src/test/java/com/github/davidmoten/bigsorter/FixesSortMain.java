@@ -28,6 +28,8 @@ import org.davidmoten.hilbert.HilbertCurve;
 import org.davidmoten.hilbert.Ranges;
 import org.davidmoten.hilbert.SmallHilbertCurve;
 
+import com.github.davidmoten.bigsorter.FixesSortMain.Record;
+
 public class FixesSortMain {
 
     static final class Extremes {
@@ -121,6 +123,24 @@ public class FixesSortMain {
                     .loggerStdOut() //
                     .sort();
         }
+        
+        {
+            System.out.println("checking sort worked");
+            try (InputStream in = new BufferedInputStream(new FileInputStream(sorted));
+                    Reader<byte[]> r = ser.createReader(in)) {
+                byte[] b = r.read();
+                int lastIndex = Integer.MIN_VALUE;
+                while (b != null) {
+                    int index = getIndex(b, extremes, hc);
+                    if (index < lastIndex) {
+                        throw new RuntimeException("sort did not work");
+                    }
+                    lastIndex = index;
+                    b = r.read();
+                }
+            }
+        }
+        System.out.println("sort ok");
 
         printStartOfSortedIndexes(extremes, hc, ser, sorted);
 
@@ -174,8 +194,22 @@ public class FixesSortMain {
             try (InputStream in = c.getInputStream()) {
                 System.out.println("reading from url inputstream");
                 Reader<byte[]> r = ser.createReader(in);
-                while (r.read() != null) {
-                    records++;
+                byte[] b;
+                while ((b = r.read()) != null) {
+                    Record rec = FixesSortMain.getRecord(b);
+                    System.out.println(rec);
+                    // check is in bounding box
+                    if (rec.lat >= lat2 && rec.lat < lat1 && rec.lon >= lon1 && rec.lon < lon2 && rec.time >= t1
+                            && rec.time < t2) {
+                        records++;
+                    } 
+                    long[] p = ind.ordinates(rec.lat, rec.lon, rec.time);
+                    long ix = ind.hilbertCurve().index(p);
+                    System.out.println("compare "+ ix + " to "+ pr.highIndex());
+//                    if (ix > pr.highIndex()) {
+//                        System.out.println("hit max index");
+//                        break;
+//                    }
                 }
             }
             System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");
