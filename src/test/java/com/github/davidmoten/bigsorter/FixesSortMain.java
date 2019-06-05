@@ -12,13 +12,20 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Comparator;
-import java.util.Map.Entry;
+import java.util.List;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import org.davidmoten.hilbert.HilbertCurve;
+import org.davidmoten.hilbert.Ranges;
 import org.davidmoten.hilbert.SmallHilbertCurve;
 
 public class FixesSortMain {
@@ -31,8 +38,7 @@ public class FixesSortMain {
         final long minTime;
         final long maxTime;
 
-        Extremes(float minLat, float maxLat, float minLon, float maxLon, long minTime,
-                long maxTime) {
+        Extremes(float minLat, float maxLat, float minLon, float maxLon, long minTime, long maxTime) {
             this.minLat = minLat;
             this.maxLat = maxLat;
             this.minLon = minLon;
@@ -118,7 +124,7 @@ public class FixesSortMain {
 
         printStartOfSortedIndexes(extremes, hc, ser, sorted);
 
-        int approximateNumIndexEntries = 10;
+        int approximateNumIndexEntries = 10000;
 
         // write idx
         File idx = new File("target/output-sorted.idx");
@@ -131,10 +137,52 @@ public class FixesSortMain {
         double[] maxes = new double[] { extremes.maxLat, extremes.maxLon, extremes.maxTime };
 
         Index ind = new Index(tree, mins, maxes, bits);
+
+        {
+            long t = System.currentTimeMillis();
+            // sydney box
+            float lat1 = -33.806477f;
+            float lon1 = 151.181767f;
+            long t1 = Math.round(mins[2] + (maxes[2] - mins[2]) / 2);
+            float lat2 = -33.882896f;
+            float lon2 = 151.281330f;
+            long t2 = t1 + TimeUnit.HOURS.toMillis(1);
+
+            long[] o1 = ind.ordinates(new double[] { lat1, lon1, t1 });
+            long[] o2 = ind.ordinates(new double[] { lat2, lon2, t2 });
+            Ranges ranges = ind.hilbertCurve().query(o1, o2);
+            List<PositionRange> positionRanges = ind.getPositionRanges(ranges);
+            positionRanges.stream().forEach(System.out::println);
+            PositionRange pr = positionRanges.get(0);
+
+            // obfuscated urls for the brief period I'm using unauthenticated access
+            String location = new String(
+                    Base64.getDecoder().decode(
+                            "aHR0cHM6Ly9tb3Rlbi1maXhlcy5zMy1hcC1zb3V0aGVhc3QtMi5hbWF6b25hd3MuY29tL291dHB1dC1zb3J0ZWQK"),
+                    StandardCharsets.UTF_8);
+
+            String locationIdx = new String(Base64.getDecoder().decode(
+                    "aHR0cHM6Ly9tb3Rlbi1maXhlcy5zMy1hcC1zb3V0aGVhc3QtMi5hbWF6b25hd3MuY29tL291dHB1dC1zb3J0ZWQuaWR4Cg=="),
+                    StandardCharsets.UTF_8);
+
+            URL u = new URL(location);
+            System.out.println("opening connection to " + u);
+            HttpsURLConnection c = (HttpsURLConnection) u.openConnection();
+            c.addRequestProperty("Range", "bytes=" + pr.floorPosition() + "-" + pr.ceilingPosition());
+            int records = 0;
+            System.out.println("getting inputstream");
+            try (InputStream in = c.getInputStream()) {
+                System.out.println("reading from url inputstream");
+                Reader<byte[]> r = ser.createReader(in);
+                while (r.read() != null) {
+                    records++;
+                }
+            }
+            System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");
+        }
     }
 
-    private static TreeMap<Integer, Long> readAndPrintIndex(File idx)
-            throws IOException, FileNotFoundException {
+    static TreeMap<Integer, Long> readAndPrintIndex(File idx) throws IOException, FileNotFoundException {
         try (DataInputStream dis = new DataInputStream(new FileInputStream(idx))) {
             dis.skip(4 + 4 + 6 * 8);
             int numEntries = dis.readInt();
@@ -154,8 +202,7 @@ public class FixesSortMain {
             throws IOException, FileNotFoundException {
         long chunk = count / numIndexEntries;
         int numIndexes = 0;
-        try (DataOutputStream dos = new DataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(idx)))) {
+        try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(idx)))) {
             dos.writeInt(hc.bits());
             dos.writeInt(hc.dimensions());
             dos.writeDouble(extremes.minLat);
@@ -209,13 +256,12 @@ public class FixesSortMain {
         }
     }
 
-    private static GZIPInputStream getInputStream(File input)
-            throws IOException, FileNotFoundException {
+    private static GZIPInputStream getInputStream(File input) throws IOException, FileNotFoundException {
         return new GZIPInputStream(new FileInputStream(input));
     }
 
-    private static void printStartOfSortedIndexes(Extremes extremes, SmallHilbertCurve hc,
-            Serializer<byte[]> ser, File output) throws FileNotFoundException, IOException {
+    private static void printStartOfSortedIndexes(Extremes extremes, SmallHilbertCurve hc, Serializer<byte[]> ser,
+            File output) throws FileNotFoundException, IOException {
         {
             System.out.println("first 10 hilbert curve indexes of output:");
             Reader<byte[]> r = ser.createReader(new FileInputStream(output));
@@ -236,14 +282,12 @@ public class FixesSortMain {
         long t = bb.getLong();
         long a = Math.round((double) ((lat - e.minLat) / (e.maxLat - e.minLat)) * hc.maxOrdinate());
         long b = Math.round((double) ((lon - e.minLon) / (e.maxLon - e.minLon)) * hc.maxOrdinate());
-        long c = Math
-                .round((double) ((t - e.minTime) / (e.maxTime - e.minTime)) * hc.maxOrdinate());
+        long c = Math.round((double) ((t - e.minTime) / (e.maxTime - e.minTime)) * hc.maxOrdinate());
         return (int) hc.index(a, b, c);
     }
 
     public static byte[] intToBytes(int value) {
-        return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8),
-                (byte) value };
+        return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
     }
 
 }

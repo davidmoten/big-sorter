@@ -54,4 +54,14 @@ public final class PositionRange {
                 Math.max(ceilingPosition, other.ceilingPosition));
     }
 
+    public Range spanning() {
+        return Range.create(ranges.get(0).low(), ranges.get(ranges.size() -1).high());
+    }
+
+    @Override
+    public String toString() {
+        return "PositionRange [ranges=" + ranges + ", floorPosition=" + floorPosition + ", ceilingPosition="
+                + ceilingPosition + "]";
+    }
+
 }

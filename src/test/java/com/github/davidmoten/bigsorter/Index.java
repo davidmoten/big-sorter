@@ -1,5 +1,8 @@
 package com.github.davidmoten.bigsorter;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -30,10 +33,11 @@ public final class Index {
      * Fits the desired ranges to the effective querying ranges according to the
      * known index positions.
      * 
-     * @param ranges list of ranges in ascending order
+     * @param ranges
+     *            list of ranges in ascending order
      * @return querying ranges based on known index positions
      */
-    public List<PositionRange> getPositionRanges(List<Range> ranges) {
+    public List<PositionRange> getPositionRanges(Iterable<Range> ranges) {
         List<PositionRange> list = new ArrayList<>();
         for (Range range : ranges) {
             Long startPosition = indexPositions.floorEntry((int) range.low()).getValue();
@@ -44,8 +48,7 @@ public final class Index {
             if (endPosition == null) {
                 endPosition = indexPositions.lastEntry().getValue();
             }
-            list.add(new PositionRange(Collections.singletonList(range), startPosition,
-                    endPosition));
+            list.add(new PositionRange(Collections.singletonList(range), startPosition, endPosition));
         }
         return simplify(list);
     }
@@ -65,19 +68,67 @@ public final class Index {
         }
         return list;
     }
+    
+    public double[] mins() {
+        return mins;
+    }
+    
+    public double[] maxes() {
+        return maxes;
+    }
 
     public long[] ordinates(double[] d) {
         Preconditions.checkArgument(d.length == mins.length);
         long[] x = new long[d.length];
         for (int i = 0; i < d.length; i++) {
-            x[i] = Math.round(
-                    (Math.min(maxes[i], d[i]) - mins[i]) / (maxes[i] - mins[i]) * hc.maxOrdinate());
+            x[i] = Math.round((Math.min(maxes[i], d[i]) - mins[i]) / (maxes[i] - mins[i]) * hc.maxOrdinate());
         }
         return x;
     }
 
     public SmallHilbertCurve hilbertCurve() {
         return hc;
+    }
+    
+
+    // dos.writeInt(hc.bits());
+    // dos.writeInt(hc.dimensions());
+    // dos.writeDouble(extremes.minLat);
+    // dos.writeDouble(extremes.maxLat);
+    // dos.writeDouble(extremes.minLon);
+    // dos.writeDouble(extremes.maxLon);
+    // dos.writeDouble(extremes.minTime);
+    // dos.writeDouble(extremes.maxTime);
+    //
+    // // num index entries
+    // dos.writeInt(0);
+    //
+    // // write 0 for int position
+    // // write 1 for long position
+    // dos.writeInt(0);
+
+    public static Index read(InputStream in) throws IOException {
+        try (DataInputStream dis = new DataInputStream(in)) {
+            int bits = dis.readInt();
+            int dimensions = dis.readInt();
+            double[] mins = new double[dimensions];
+            for (int i = 0; i < dimensions; i++) {
+                mins[i] = dis.readDouble();
+            }
+            double[] maxes = new double[dimensions];
+            for (int i = 0; i < dimensions; i++) {
+                maxes[i] = dis.readDouble();
+            }
+            int numEntries = dis.readInt();
+            dis.readInt();
+            TreeMap<Integer, Long> indexPositions = new TreeMap<Integer, Long>();
+            for (int i = 0; i< numEntries; i++) {
+                int pos = dis.readInt();
+                int index = dis.readInt();
+                indexPositions.put(index, (long) pos);
+            }
+            return new Index(indexPositions, mins, maxes, bits);
+        }
     }
 
 }
