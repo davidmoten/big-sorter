@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -112,6 +113,11 @@ public final class Index {
             }
             return new Index(indexPositions, mins, maxes, bits);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Index [mins=" + Arrays.toString(mins) + ", maxes=" + Arrays.toString(maxes) + "]";
     }
 
 }

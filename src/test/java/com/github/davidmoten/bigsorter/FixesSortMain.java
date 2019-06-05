@@ -157,6 +157,7 @@ public class FixesSortMain {
         double[] maxes = new double[] { extremes.maxLat, extremes.maxLon, extremes.maxTime };
 
         Index ind = new Index(tree, mins, maxes, bits);
+        System.out.println("Index = " + ind);
 
         {
             long t = System.currentTimeMillis();
