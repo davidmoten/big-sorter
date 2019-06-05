@@ -82,7 +82,7 @@ public final class Index {
         Preconditions.checkArgument(d.length == mins.length);
         long[] x = new long[d.length];
         for (int i = 0; i < d.length; i++) {
-            x[i] = Math.round((Math.min(maxes[i], d[i]) - mins[i]) / (maxes[i] - mins[i]) * hc.maxOrdinate());
+            x[i] = Math.round(((d[i] - mins[i]) / (maxes[i] - mins[i])) * hc.maxOrdinate());
         }
         return x;
     }

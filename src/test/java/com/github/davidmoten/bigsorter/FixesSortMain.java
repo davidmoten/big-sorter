@@ -143,7 +143,7 @@ public class FixesSortMain {
 
         printStartOfSortedIndexes(extremes, hc, ser, sorted);
 
-        int approximateNumIndexEntries = 100;
+        int approximateNumIndexEntries = 10000;
 
         // write idx
         File idx = new File("target/output-sorted.idx");
@@ -153,7 +153,6 @@ public class FixesSortMain {
         TreeMap<Integer, Long> tree = readAndPrintIndex(idx);
 
         tree.forEach((index, pos) -> System.out.println("index=" + index + "\tpos=" + pos));
-        ;
 
         double[] mins = new double[] { extremes.minLat, extremes.minLon, extremes.minTime };
         double[] maxes = new double[] { extremes.maxLat, extremes.maxLon, extremes.maxTime };
@@ -162,7 +161,6 @@ public class FixesSortMain {
         System.out.println("Index = " + ind);
 
         {
-            long t = System.currentTimeMillis();
             // sydney box
             float lat1 = -33.806477f;
             float lon1 = 151.181767f;
@@ -177,7 +175,13 @@ public class FixesSortMain {
             List<PositionRange> positionRanges = ind.getPositionRanges(ranges);
             positionRanges.stream().forEach(System.out::println);
             PositionRange pr = positionRanges.get(0);
-
+//                final InputStream in2;
+//                try (DataInputStream d = new DataInputStream(new FileInputStream(sorted))) {
+//                    byte[] bytes2 = new byte[(int) (pr.ceilingPosition() - pr.floorPosition())];
+//                    d.skip(pr.floorPosition());
+//                    d.readFully(bytes2);
+//                    in2 = new ByteArrayInputStream(bytes2);
+//                }
             // obfuscated urls for the brief period I'm using unauthenticated access
             String location = new String(
                     Base64.getDecoder().decode(
@@ -190,35 +194,27 @@ public class FixesSortMain {
 
             URL u = new URL(location);
             System.out.println("opening connection to " + u);
+            long t = System.currentTimeMillis();
             HttpsURLConnection c = (HttpsURLConnection) u.openConnection();
             String bytesRange = "bytes=" + pr.floorPosition() + "-" + pr.ceilingPosition();
-            System.out.println("Range: " + bytesRange);
             c.addRequestProperty("Range", bytesRange);
             final int records;
-            System.out.println("getting inputstream");
-            final InputStream in2;
-            try (DataInputStream d = new DataInputStream(new FileInputStream(sorted))) {
-                byte[] bytes2 = new byte[(int) (pr.ceilingPosition() - pr.floorPosition())];
-                d.skip(pr.floorPosition());
-                d.readFully(bytes2);
-                in2 = new ByteArrayInputStream(bytes2);
-            }
             try (InputStream in = c.getInputStream()) {
-                records = read(ser, ind, lat1, lon1, t1, lat2, lon2, t2, pr, in2);
+                records = read(ser, ind, lat1, lon1, t1, lat2, lon2, t2, pr, in, extremes, hc);
             }
             System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");
         }
     }
 
     private static int read(Serializer<byte[]> ser, Index ind, float lat1, float lon1, long t1, float lat2, float lon2,
-            long t2, PositionRange pr, InputStream in) throws IOException {
+            long t2, PositionRange pr, InputStream in, Extremes extremes, SmallHilbertCurve hc) throws IOException {
         System.out.println("reading from url inputstream");
         Reader<byte[]> r = ser.createReader(in);
         byte[] b;
         int records = 0;
         while ((b = r.read()) != null) {
             Record rec = FixesSortMain.getRecord(b);
-            System.out.println(rec);
+//            System.out.println(rec);
             // check is in bounding box
             if (rec.lat >= lat2 && rec.lat < lat1 && rec.lon >= lon1 && rec.lon < lon2 && rec.time >= t1
                     && rec.time < t2) {
@@ -226,11 +222,10 @@ public class FixesSortMain {
             }
             long[] p = ind.ordinates(rec.lat, rec.lon, rec.time);
             long ix = ind.hilbertCurve().index(p);
-            System.out.println("compare " + ix + " to " + pr.highIndex());
-            // if (ix > pr.highIndex()) {
-            // System.out.println("hit max index");
-            // break;
-            // }
+            if (ix > pr.highIndex()) {
+                System.out.println("hit max index");
+                break;
+            }
         }
         return records;
     }
@@ -360,9 +355,9 @@ public class FixesSortMain {
         float lat = bb.getFloat();
         float lon = bb.getFloat();
         long t = bb.getLong();
-        long a = Math.round((double) ((lat - e.minLat) / (e.maxLat - e.minLat)) * hc.maxOrdinate());
-        long b = Math.round((double) ((lon - e.minLon) / (e.maxLon - e.minLon)) * hc.maxOrdinate());
-        long c = Math.round((double) ((t - e.minTime) / (e.maxTime - e.minTime)) * hc.maxOrdinate());
+        long a = Math.round(((lat - e.minLat) / (e.maxLat - e.minLat)) * hc.maxOrdinate());
+        long b = Math.round(((lon - e.minLon) / (e.maxLon - e.minLon)) * hc.maxOrdinate());
+        long c = Math.round((((double) (t - e.minTime)) / ((double) (e.maxTime - e.minTime))) * hc.maxOrdinate());
         return (int) hc.index(a, b, c);
     }
 
