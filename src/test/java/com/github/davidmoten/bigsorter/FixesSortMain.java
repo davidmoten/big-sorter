@@ -1,5 +1,7 @@
 package com.github.davidmoten.bigsorter;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -175,13 +177,13 @@ public class FixesSortMain {
             List<PositionRange> positionRanges = ind.getPositionRanges(ranges);
             positionRanges.stream().forEach(System.out::println);
             PositionRange pr = positionRanges.get(0);
-//                final InputStream in2;
-//                try (DataInputStream d = new DataInputStream(new FileInputStream(sorted))) {
-//                    byte[] bytes2 = new byte[(int) (pr.ceilingPosition() - pr.floorPosition())];
-//                    d.skip(pr.floorPosition());
-//                    d.readFully(bytes2);
-//                    in2 = new ByteArrayInputStream(bytes2);
-//                }
+            // final InputStream in2;
+            // try (DataInputStream d = new DataInputStream(new FileInputStream(sorted))) {
+            // byte[] bytes2 = new byte[(int) (pr.ceilingPosition() - pr.floorPosition())];
+            // d.skip(pr.floorPosition());
+            // d.readFully(bytes2);
+            // in2 = new ByteArrayInputStream(bytes2);
+            // }
             // obfuscated urls for the brief period I'm using unauthenticated access
             String location = new String(
                     Base64.getDecoder().decode(
@@ -192,18 +194,30 @@ public class FixesSortMain {
                     "aHR0cHM6Ly9tb3Rlbi1maXhlcy5zMy1hcC1zb3V0aGVhc3QtMi5hbWF6b25hd3MuY29tL291dHB1dC1zb3J0ZWQuaWR4Cg=="),
                     StandardCharsets.UTF_8);
 
-            URL u = new URL(location);
-            System.out.println("opening connection to " + u);
-            long t = System.currentTimeMillis();
-            HttpsURLConnection c = (HttpsURLConnection) u.openConnection();
-            String bytesRange = "bytes=" + pr.floorPosition() + "-" + pr.ceilingPosition();
-            c.addRequestProperty("Range", bytesRange);
-            final int records;
-            try (InputStream in = c.getInputStream()) {
-                records = read(ser, ind, lat1, lon1, t1, lat2, lon2, t2, pr, in, extremes, hc);
+            for (int i = 1; i < 10; i++) {
+                long t = System.currentTimeMillis();
+                InputStream in3 = getIndexInputStream(locationIdx);
+                ind = Index.read(in3);
+                System.out.println("read index in " + (System.currentTimeMillis() - t) + "ms");
+                URL u = new URL(location);
+                System.out.println("opening connection to " + u);
+                HttpsURLConnection c = (HttpsURLConnection) u.openConnection();
+                String bytesRange = "bytes=" + pr.floorPosition() + "-" + pr.ceilingPosition();
+                c.addRequestProperty("Range", bytesRange);
+                final int records;
+                try (InputStream in = c.getInputStream()) {
+                    records = read(ser, ind, lat1, lon1, t1, lat2, lon2, t2, pr, in, extremes, hc);
+                }
+                System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");
+                assertEquals(1130, records);
             }
-            System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");
         }
+    }
+
+    private static InputStream getIndexInputStream(String indexUrl) throws IOException {
+        URL u = new URL(indexUrl);
+        HttpsURLConnection c = (HttpsURLConnection) u.openConnection();
+        return c.getInputStream();
     }
 
     private static int read(Serializer<byte[]> ser, Index ind, float lat1, float lon1, long t1, float lat2, float lon2,
@@ -214,7 +228,7 @@ public class FixesSortMain {
         int records = 0;
         while ((b = r.read()) != null) {
             Record rec = FixesSortMain.getRecord(b);
-//            System.out.println(rec);
+            // System.out.println(rec);
             // check is in bounding box
             if (rec.lat >= lat2 && rec.lat < lat1 && rec.lon >= lon1 && rec.lon < lon2 && rec.time >= t1
                     && rec.time < t2) {
