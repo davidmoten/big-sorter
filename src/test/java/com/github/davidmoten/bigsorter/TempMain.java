@@ -15,6 +15,8 @@ import javax.net.ssl.HttpsURLConnection;
 
 import org.davidmoten.hilbert.Ranges;
 
+import com.github.davidmoten.bigsorter.FixesSortMain.Record;
+
 public class TempMain {
     public static void main(String[] args) throws FileNotFoundException, IOException {
         File idx = new File("target/output-sorted.idx");
@@ -38,7 +40,7 @@ public class TempMain {
             List<PositionRange> positionRanges = ind.getPositionRanges(ranges);
             positionRanges.stream().forEach(System.out::println);
             PositionRange pr = positionRanges.get(0);
-
+            
             // obfuscated urls for the brief period I'm using unauthenticated access
             String location = new String(
                     Base64.getDecoder().decode(
@@ -58,9 +60,22 @@ public class TempMain {
             try (InputStream in = c.getInputStream()) {
                 System.out.println("reading from url inputstream");
                 Reader<byte[]> r = ser.createReader(in);
-                while (r.read() != null) {
-                    //TODO stop when no more required
-                    records++;
+                byte[] b;
+                while ((b = r.read()) != null) {
+                    Record rec = FixesSortMain.getRecord(b);
+                    System.out.println(rec);
+                    // check is in bounding box
+                    if (rec.lat >= lat2 && rec.lat < lat1 && rec.lon >= lon1 && rec.lon < lon2 && rec.time >= t1
+                            && rec.time < t2) {
+                        records++;
+                    } 
+                    long[] p = ind.ordinates(rec.lat, rec.lon, rec.time);
+                    long ix = ind.hilbertCurve().index(p);
+                    System.out.println("compare "+ ix + " to "+ pr.highIndex());
+//                    if (ix > pr.highIndex()) {
+//                        System.out.println("hit max index");
+//                        break;
+//                    }
                 }
             }
             System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");

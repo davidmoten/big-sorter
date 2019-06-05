@@ -273,6 +273,33 @@ public class FixesSortMain {
         }
     }
 
+    static final class Record {
+        final float lat;
+        final float lon;
+        final long time;
+
+        Record(float lat, float lon, long time) {
+            this.lat = lat;
+            this.lon = lon;
+            this.time = time;
+        }
+
+        @Override
+        public String toString() {
+            return "Record [lat=" + lat + ", lon=" + lon + ", time=" + time + "]";
+        }
+    }
+
+    static Record getRecord(byte[] x) {
+        ByteBuffer bb = ByteBuffer.wrap(x);
+        // skip mmsi
+        bb.position(4);
+        float lat = bb.getFloat();
+        float lon = bb.getFloat();
+        long t = bb.getLong();
+        return new Record(lat, lon, t);
+    }
+
     private static int getIndex(byte[] x, Extremes e, SmallHilbertCurve hc) {
         ByteBuffer bb = ByteBuffer.wrap(x);
         // skip mmsi

@@ -77,7 +77,7 @@ public final class Index {
         return maxes;
     }
 
-    public long[] ordinates(double[] d) {
+    public long[] ordinates(double... d) {
         Preconditions.checkArgument(d.length == mins.length);
         long[] x = new long[d.length];
         for (int i = 0; i < d.length; i++) {
@@ -89,23 +89,6 @@ public final class Index {
     public SmallHilbertCurve hilbertCurve() {
         return hc;
     }
-    
-
-    // dos.writeInt(hc.bits());
-    // dos.writeInt(hc.dimensions());
-    // dos.writeDouble(extremes.minLat);
-    // dos.writeDouble(extremes.maxLat);
-    // dos.writeDouble(extremes.minLon);
-    // dos.writeDouble(extremes.maxLon);
-    // dos.writeDouble(extremes.minTime);
-    // dos.writeDouble(extremes.maxTime);
-    //
-    // // num index entries
-    // dos.writeInt(0);
-    //
-    // // write 0 for int position
-    // // write 1 for long position
-    // dos.writeInt(0);
 
     public static Index read(InputStream in) throws IOException {
         try (DataInputStream dis = new DataInputStream(in)) {
