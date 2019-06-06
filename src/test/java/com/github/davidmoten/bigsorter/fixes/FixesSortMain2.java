@@ -17,6 +17,7 @@ import java.io.RandomAccessFile;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
@@ -56,6 +57,7 @@ public class FixesSortMain2 {
 
     public static void main(String[] args) throws IOException {
         System.out.println("starting");
+        boolean sort = false;
         String filename = "2019-05-15.binary-fixes-with-mmsi.gz";
         int recordSize = 35;
         File input = new File(System.getProperty("user.home") + "/Downloads/" + filename);
@@ -119,18 +121,21 @@ public class FixesSortMain2 {
             return Integer.compare(indexX, indexY);
         };
         File sorted = new File("target/output-sorted");
-        try (InputStream in = getInputStream(input)) {
-            Sorter //
-                    .serializer(ser) //
-                    .comparator(comparator) //
-                    .input(in) //
-                    .output(sorted) //
-                    .loggerStdOut() //
-                    .sort();
-        }
+        if (sort)
+            try (InputStream in = getInputStream(input)) {
+                Sorter //
+                        .serializer(ser) //
+                        .comparator(comparator) //
+                        .input(in) //
+                        .output(sorted) //
+                        .loggerStdOut() //
+                        .sort();
+            }
 
         // sydney box
         Bounds sb = createSydneyBounds(minTime, maxTime);
+        System.out.println(sb);
+        System.out.println(sb.contains(new double[] { -33.82, 151.2, 2.148E9 }));
         long contains = 0;
         {
             System.out.println("checking sort worked");
@@ -142,6 +147,9 @@ public class FixesSortMain2 {
                     Record rec = getRecord(b);
                     if (sb.contains(rec.toArray())) {
                         contains++;
+                    }
+                    if (sb.mins()[2] < rec.time && sb.maxes()[2] > rec.time) {
+                        System.out.println(Arrays.toString(rec.toArray()));
                     }
                     int index = getIndex(b, extremes, hc);
                     if (index < lastIndex) {

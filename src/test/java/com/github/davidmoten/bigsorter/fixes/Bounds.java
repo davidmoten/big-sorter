@@ -1,5 +1,7 @@
 package com.github.davidmoten.bigsorter.fixes;
 
+import java.util.Arrays;
+
 import com.github.davidmoten.guavamini.Preconditions;
 
 public final class Bounds {
@@ -36,6 +38,11 @@ public final class Bounds {
 
     public double[] maxes() {
         return maxes;
+    }
+
+    @Override
+    public String toString() {
+        return "Bounds [mins=" + Arrays.toString(mins) + ", maxes=" + Arrays.toString(maxes) + "]";
     }
 
 }
