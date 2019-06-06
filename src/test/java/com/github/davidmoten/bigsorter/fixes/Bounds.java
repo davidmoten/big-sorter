@@ -10,8 +10,8 @@ public final class Bounds {
     public Bounds(double[] a, double[] b) {
         Preconditions.checkArgument(a.length > 0);
         Preconditions.checkArgument(a.length == b.length);
-        double[] mins = new double[] {};
-        double[] maxes = new double[] {};
+        double[] mins = new double[a.length];
+        double[] maxes = new double[a.length];
         for (int i = 0; i < a.length; i++) {
             mins[i] = Math.min(a[i], b[i]);
             maxes[i] = Math.max(a[i], b[i]);
@@ -29,11 +29,11 @@ public final class Bounds {
         }
         return true;
     }
-    
+
     public double[] mins() {
         return mins;
     }
-    
+
     public double[] maxes() {
         return maxes;
     }

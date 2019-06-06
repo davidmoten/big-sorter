@@ -17,7 +17,7 @@ import org.davidmoten.hilbert.Ranges;
 
 import com.github.davidmoten.bigsorter.Reader;
 import com.github.davidmoten.bigsorter.Serializer;
-import com.github.davidmoten.bigsorter.fixes.FixesSortMain.Record;
+import com.github.davidmoten.bigsorter.fixes.FixesSortMain2.Record;
 
 public class TempMain {
     public static void main(String[] args) throws FileNotFoundException, IOException {
@@ -64,7 +64,7 @@ public class TempMain {
                 Reader<byte[]> r = ser.createReader(in);
                 byte[] b;
                 while ((b = r.read()) != null) {
-                    Record rec = FixesSortMain.getRecord(b);
+                    Record rec = FixesSortMain2.getRecord(b);
                     System.out.println(rec);
                     // check is in bounding box
                     if (rec.lat >= lat2 && rec.lat < lat1 && rec.lon >= lon1 && rec.lon < lon2 && rec.time >= t1

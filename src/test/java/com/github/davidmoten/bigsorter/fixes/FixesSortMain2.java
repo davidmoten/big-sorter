@@ -34,7 +34,7 @@ import com.github.davidmoten.bigsorter.Reader;
 import com.github.davidmoten.bigsorter.Serializer;
 import com.github.davidmoten.bigsorter.Sorter;
 
-public class FixesSortMain {
+public class FixesSortMain2 {
 
     static final class Extremes {
         final float minLat;
@@ -240,7 +240,7 @@ public class FixesSortMain {
         byte[] b;
         int records = 0;
         while ((b = r.read()) != null) {
-            Record rec = FixesSortMain.getRecord(b);
+            Record rec = FixesSortMain2.getRecord(b);
             // System.out.println(rec);
             // check is in bounding box
             if (rec.lat >= bb.mins()[0] //
