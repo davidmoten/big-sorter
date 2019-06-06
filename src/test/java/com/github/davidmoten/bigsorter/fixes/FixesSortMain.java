@@ -1,10 +1,9 @@
-package com.github.davidmoten.bigsorter;
+package com.github.davidmoten.bigsorter.fixes;
 
 import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -30,6 +29,10 @@ import javax.net.ssl.HttpsURLConnection;
 import org.davidmoten.hilbert.HilbertCurve;
 import org.davidmoten.hilbert.Ranges;
 import org.davidmoten.hilbert.SmallHilbertCurve;
+
+import com.github.davidmoten.bigsorter.Reader;
+import com.github.davidmoten.bigsorter.Serializer;
+import com.github.davidmoten.bigsorter.Sorter;
 
 public class FixesSortMain {
 
@@ -125,6 +128,9 @@ public class FixesSortMain {
                     .sort();
         }
 
+        // sydney box
+        Bounds sb = createSydneyBounds(minTime, maxTime);
+        long contains = 0;
         {
             System.out.println("checking sort worked");
             try (InputStream in = new BufferedInputStream(new FileInputStream(sorted));
@@ -132,6 +138,10 @@ public class FixesSortMain {
                 byte[] b = r.read();
                 int lastIndex = Integer.MIN_VALUE;
                 while (b != null) {
+                    Record rec = getRecord(b);
+                    if (sb.contains(rec.toArray())) {
+                        contains++;
+                    }
                     int index = getIndex(b, extremes, hc);
                     if (index < lastIndex) {
                         throw new RuntimeException("sort did not work");
@@ -142,6 +152,7 @@ public class FixesSortMain {
             }
         }
         System.out.println("sort ok");
+        System.out.println("number of records within sydney bounds = " + contains);
 
         printStartOfSortedIndexes(extremes, hc, ser, sorted);
 
@@ -163,16 +174,8 @@ public class FixesSortMain {
         System.out.println("Index = " + ind);
 
         {
-            // sydney box
-            float lat1 = -33.806477f;
-            float lon1 = 151.181767f;
-            long t1 = Math.round(mins[2] + (maxes[2] - mins[2]) / 2);
-            float lat2 = -33.882896f;
-            float lon2 = 151.281330f;
-            long t2 = t1 + TimeUnit.HOURS.toMillis(1);
-
-            long[] o1 = ind.ordinates(new double[] { lat1, lon1, t1 });
-            long[] o2 = ind.ordinates(new double[] { lat2, lon2, t2 });
+            long[] o1 = ind.ordinates(sb.mins());
+            long[] o2 = ind.ordinates(sb.maxes());
             Ranges ranges = ind.hilbertCurve().query(o1, o2);
             List<PositionRange> positionRanges = ind.getPositionRanges(ranges);
             positionRanges.stream().forEach(System.out::println);
@@ -206,12 +209,22 @@ public class FixesSortMain {
                 c.addRequestProperty("Range", bytesRange);
                 final int records;
                 try (InputStream in = c.getInputStream()) {
-                    records = read(ser, ind, lat1, lon1, t1, lat2, lon2, t2, pr, in, extremes, hc);
+                    records = read(ser, ind, sb, pr, in, extremes, hc);
                 }
                 System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");
                 assertEquals(1130, records);
             }
         }
+    }
+
+    private static Bounds createSydneyBounds(long minTime, long maxTime) {
+        float lat1 = -33.806477f;
+        float lon1 = 151.181767f;
+        long t1 = Math.round(minTime + (maxTime - minTime) / 2);
+        float lat2 = -33.882896f;
+        float lon2 = 151.281330f;
+        long t2 = t1 + TimeUnit.HOURS.toMillis(1);
+        return new Bounds(new double[] { lat1, lon1, t1 }, new double[] { lat2, lon2, t2 });
     }
 
     private static InputStream getIndexInputStream(String indexUrl) throws IOException {
@@ -220,8 +233,8 @@ public class FixesSortMain {
         return c.getInputStream();
     }
 
-    private static int read(Serializer<byte[]> ser, Index ind, float lat1, float lon1, long t1, float lat2, float lon2,
-            long t2, PositionRange pr, InputStream in, Extremes extremes, SmallHilbertCurve hc) throws IOException {
+    private static int read(Serializer<byte[]> ser, Index ind, Bounds bb, PositionRange pr, InputStream in,
+            Extremes extremes, SmallHilbertCurve hc) throws IOException {
         System.out.println("reading from url inputstream");
         Reader<byte[]> r = ser.createReader(in);
         byte[] b;
@@ -230,8 +243,11 @@ public class FixesSortMain {
             Record rec = FixesSortMain.getRecord(b);
             // System.out.println(rec);
             // check is in bounding box
-            if (rec.lat >= lat2 && rec.lat < lat1 && rec.lon >= lon1 && rec.lon < lon2 && rec.time >= t1
-                    && rec.time < t2) {
+            if (rec.lat >= bb.mins()[0] //
+                    && rec.lat < bb.maxes()[0] //
+                    && rec.lon >= bb.mins()[1] //
+                    && rec.lon < bb.maxes()[1] && rec.time >= bb.mins()[2] //
+                    && rec.time < bb.maxes()[2]) {
                 records++;
             }
             long[] p = ind.ordinates(rec.lat, rec.lon, rec.time);
@@ -344,6 +360,10 @@ public class FixesSortMain {
             this.lat = lat;
             this.lon = lon;
             this.time = time;
+        }
+
+        double[] toArray() {
+            return new double[] { lat, lon, time };
         }
 
         @Override

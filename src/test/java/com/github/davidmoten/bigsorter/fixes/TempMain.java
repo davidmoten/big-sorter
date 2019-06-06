@@ -1,4 +1,4 @@
-package com.github.davidmoten.bigsorter;
+package com.github.davidmoten.bigsorter.fixes;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,7 +15,9 @@ import javax.net.ssl.HttpsURLConnection;
 
 import org.davidmoten.hilbert.Ranges;
 
-import com.github.davidmoten.bigsorter.FixesSortMain.Record;
+import com.github.davidmoten.bigsorter.Reader;
+import com.github.davidmoten.bigsorter.Serializer;
+import com.github.davidmoten.bigsorter.fixes.FixesSortMain.Record;
 
 public class TempMain {
     public static void main(String[] args) throws FileNotFoundException, IOException {
