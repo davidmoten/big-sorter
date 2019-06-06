@@ -105,7 +105,8 @@ public class FixesSortMain2 {
             System.out.println("minTime=" + minTime);
             System.out.println("maxTime=" + maxTime);
         }
-        Extremes extremes = new Extremes(minLat, maxLat, minLon, maxLon, minTime, maxTime);
+        Bounds extremes = new Bounds(new double[] { minLat, minLon, minTime },
+                new double[] { maxLat, maxLon, maxTime });
 
         // sort the input file using the hilbert curve index
         int bits = 10;
@@ -167,8 +168,8 @@ public class FixesSortMain2 {
 
         tree.forEach((index, pos) -> System.out.println("index=" + index + "\tpos=" + pos));
 
-        double[] mins = new double[] { extremes.minLat, extremes.minLon, extremes.minTime };
-        double[] maxes = new double[] { extremes.maxLat, extremes.maxLon, extremes.maxTime };
+        double[] mins = extremes.mins();
+        double[] maxes = extremes.maxes();
 
         Index ind = new Index(tree, mins, maxes, bits);
         System.out.println("Index = " + ind);
@@ -209,9 +210,9 @@ public class FixesSortMain2 {
                 c.addRequestProperty("Range", bytesRange);
                 final int records;
                 try (InputStream in = c.getInputStream()) {
-                    records = read(ser, ind, sb, pr, in, extremes, hc);
+                    records = read(ser, ind, sb, pr, in, hc);
                 }
-                System.out.println("read " + records + " in " + (System.currentTimeMillis() - t) + "ms");
+                System.out.println("found " + records + " in " + (System.currentTimeMillis() - t) + "ms");
                 assertEquals(1130, records);
             }
         }
@@ -233,23 +234,21 @@ public class FixesSortMain2 {
         return c.getInputStream();
     }
 
-    private static int read(Serializer<byte[]> ser, Index ind, Bounds bb, PositionRange pr, InputStream in,
-            Extremes extremes, SmallHilbertCurve hc) throws IOException {
+    private static int read(Serializer<byte[]> ser, Index ind, Bounds searchBounds, PositionRange pr, InputStream in,
+            SmallHilbertCurve hc) throws IOException {
         System.out.println("reading from url inputstream");
         Reader<byte[]> r = ser.createReader(in);
         byte[] b;
         int records = 0;
+        long total = 0;
         while ((b = r.read()) != null) {
             Record rec = FixesSortMain2.getRecord(b);
             // System.out.println(rec);
             // check is in bounding box
-            if (rec.lat >= bb.mins()[0] //
-                    && rec.lat < bb.maxes()[0] //
-                    && rec.lon >= bb.mins()[1] //
-                    && rec.lon < bb.maxes()[1] && rec.time >= bb.mins()[2] //
-                    && rec.time < bb.maxes()[2]) {
+            if (searchBounds.contains(rec.toArray())) {
                 records++;
             }
+            total++;
             long[] p = ind.ordinates(rec.lat, rec.lon, rec.time);
             long ix = ind.hilbertCurve().index(p);
             if (ix > pr.highIndex()) {
@@ -257,6 +256,7 @@ public class FixesSortMain2 {
                 break;
             }
         }
+        System.out.println("read " + total + " records");
         return records;
     }
 
@@ -275,7 +275,7 @@ public class FixesSortMain2 {
         }
     }
 
-    private static void writeIdx(int recordSize, int count, Extremes extremes, SmallHilbertCurve hc,
+    private static void writeIdx(int recordSize, int count, Bounds extremes, SmallHilbertCurve hc,
             Serializer<byte[]> ser, File output, int numIndexEntries, File idx)
             throws IOException, FileNotFoundException {
         long chunk = count / numIndexEntries;
@@ -283,12 +283,12 @@ public class FixesSortMain2 {
         try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(idx)))) {
             dos.writeInt(hc.bits());
             dos.writeInt(hc.dimensions());
-            dos.writeDouble(extremes.minLat);
-            dos.writeDouble(extremes.maxLat);
-            dos.writeDouble(extremes.minLon);
-            dos.writeDouble(extremes.maxLon);
-            dos.writeDouble(extremes.minTime);
-            dos.writeDouble(extremes.maxTime);
+            dos.writeDouble(extremes.mins()[0]);
+            dos.writeDouble(extremes.maxes()[0]);
+            dos.writeDouble(extremes.mins()[1]);
+            dos.writeDouble(extremes.maxes()[1]);
+            dos.writeDouble(extremes.mins()[2]);
+            dos.writeDouble(extremes.maxes()[2]);
 
             // num index entries
             dos.writeInt(0);
@@ -338,7 +338,7 @@ public class FixesSortMain2 {
         return new GZIPInputStream(new FileInputStream(input));
     }
 
-    private static void printStartOfSortedIndexes(Extremes extremes, SmallHilbertCurve hc, Serializer<byte[]> ser,
+    private static void printStartOfSortedIndexes(Bounds extremes, SmallHilbertCurve hc, Serializer<byte[]> ser,
             File output) throws FileNotFoundException, IOException {
         {
             System.out.println("first 10 hilbert curve indexes of output:");
@@ -382,16 +382,17 @@ public class FixesSortMain2 {
         return new Record(lat, lon, t);
     }
 
-    private static int getIndex(byte[] x, Extremes e, SmallHilbertCurve hc) {
+    private static int getIndex(byte[] x, Bounds e, SmallHilbertCurve hc) {
         ByteBuffer bb = ByteBuffer.wrap(x);
         // skip mmsi
         bb.position(4);
         float lat = bb.getFloat();
         float lon = bb.getFloat();
         long t = bb.getLong();
-        long a = Math.round(((lat - e.minLat) / (e.maxLat - e.minLat)) * hc.maxOrdinate());
-        long b = Math.round(((lon - e.minLon) / (e.maxLon - e.minLon)) * hc.maxOrdinate());
-        long c = Math.round((((double) (t - e.minTime)) / ((double) (e.maxTime - e.minTime))) * hc.maxOrdinate());
+        long a = Math.round(((lat - e.mins()[0]) / (e.maxes()[0] - e.mins()[0])) * hc.maxOrdinate());
+        long b = Math.round(((lon - e.mins()[1]) / (e.maxes()[1] - e.mins()[1])) * hc.maxOrdinate());
+        long c = Math
+                .round((((double) (t - e.mins()[2])) / ((double) (e.maxes()[2] - e.mins()[2]))) * hc.maxOrdinate());
         return (int) hc.index(a, b, c);
     }
 
