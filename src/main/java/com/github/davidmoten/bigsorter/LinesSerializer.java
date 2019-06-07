@@ -54,6 +54,11 @@ class LinesSerializer implements Serializer<String> {
 				bw.close();
 			}
 
+            @Override
+            public void flush() throws IOException {
+                bw.flush();
+            }
+
 		};
 	}
 

@@ -7,4 +7,6 @@ public interface Writer<T> extends Closeable {
 
     void write(T value) throws IOException;
     
+    void flush() throws IOException;
+    
 }

@@ -50,6 +50,11 @@ public abstract class DataSerializer<T> implements Serializer<T> {
             public void close() throws IOException {
                 dos.close();
             }
+
+            @Override
+            public void flush() throws IOException {
+                dos.flush();
+            }
 		};
 	}
 

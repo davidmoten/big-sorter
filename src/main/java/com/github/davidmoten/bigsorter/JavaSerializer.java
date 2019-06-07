@@ -66,6 +66,11 @@ class JavaSerializer<T extends Serializable> implements Serializer<T> {
 			public void close() throws IOException {
 				oos.close();
 			}
+
+            @Override
+            public void flush() throws IOException {
+                oos.flush();
+            }
 		};
 	}
 

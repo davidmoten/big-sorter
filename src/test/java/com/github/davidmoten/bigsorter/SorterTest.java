@@ -367,6 +367,11 @@ public class SorterTest {
                     public void close() throws IOException {
                         w.close();
                     }
+
+                    @Override
+                    public void flush() throws IOException {
+                        w.flush();
+                    }
                 };
             }
 

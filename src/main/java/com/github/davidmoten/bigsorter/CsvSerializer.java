@@ -80,6 +80,13 @@ final class CsvSerializer implements Serializer<CSVRecord> {
                 }
             }
 
+            @Override
+            public void flush() {
+                if (ps != null) {
+                    ps.flush();
+                }
+            }
+
         };
     }
 
