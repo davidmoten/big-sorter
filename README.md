@@ -41,13 +41,11 @@ Add this dependency to your maven pom.xml:
 If you want to sort csv add this extra dependency:
 ```xml
 <dependency>
-    <groupId>com.github.davidmoten</groupId>
+    <groupId>org.apache.commons</groupId>
     <artifactId>commons-csv</artifactId>
-    <version>1.6.002</version>
+    <version>1.7</version>
 </dependency>
 ```
-The above csv dependency will be switched out for Apache [commons-csv](https://github.com/apache/commons-csv) once [CVS-239](https://issues.apache.org/jira/browse/CSV-239) is resolved (should be sorted in commons-csv 1.7).
-
 ## Serialization
 To read records from files or InputStreams and to write records to files we need to specify the *serialization* method to use.
 
