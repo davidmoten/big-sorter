@@ -12,7 +12,7 @@ public abstract class DataSerializer<T> implements Serializer<T> {
 	public abstract T read(DataInputStream dis) throws IOException;
 
 	public abstract void write(DataOutputStream dos, T value) throws IOException;
-
+	
 	@Override
 	public Reader<T> createReader(InputStream in) {
 		return new Reader<T>() {

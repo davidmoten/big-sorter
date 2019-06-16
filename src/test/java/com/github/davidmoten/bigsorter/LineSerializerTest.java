@@ -1,9 +1,11 @@
 package com.github.davidmoten.bigsorter;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
@@ -48,6 +50,16 @@ public class LineSerializerTest {
             w.write("hello");
         }
         assertEquals("hello\r\n", new String(out.toByteArray(), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testFlush() throws IOException {
+        TestingOutputStream out = new TestingOutputStream();
+        try (Writer<String> w = Serializer.lines(StandardCharsets.UTF_8, LineDelimiter.LINE_FEED)
+                .createWriter(out)) {
+            w.flush();
+        }
+        assertTrue(out.flushed);
     }
 
 }

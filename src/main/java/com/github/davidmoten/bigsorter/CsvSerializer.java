@@ -75,9 +75,7 @@ final class CsvSerializer implements Serializer<CSVRecord> {
 
             @Override
             public void close() throws IOException {
-                if (ps != null) {
-                    ps.flush();
-                }
+               flush();
             }
 
             @Override
@@ -89,5 +87,5 @@ final class CsvSerializer implements Serializer<CSVRecord> {
 
         };
     }
-
+    
 }
