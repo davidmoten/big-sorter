@@ -7,6 +7,8 @@ Sorts very large files (or `InputStream`s) by splitting to many intermediate sma
 
 Status: *deployed to Maven Central*
 
+<img src="src/docs/big-sorter-annotated.png" style="width:100%"/>
+
 ## Features
 
 * Easy to use builder
@@ -21,8 +23,6 @@ Status: *deployed to Maven Central*
 * Serialization is customizable
 
 ## Algorithm
-
-<img src="src/docs/big-sorter-annotated.png" style="width:100%"/>
 
 A large file or `InputStream` of records is sorted by:
 * splitting the whole file into smaller segments according to `maxItemsPerFile`
