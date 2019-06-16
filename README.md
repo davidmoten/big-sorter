@@ -21,6 +21,9 @@ Status: *deployed to Maven Central*
 * Serialization is customizable
 
 ## Algorithm
+
+<img src="src/docs/big-sorter-annotated.png" style="width:100%"/>
+
 A large file or `InputStream` of records is sorted by:
 * splitting the whole file into smaller segments according to `maxItemsPerFile`
 * each segment is sorted in memory and then written to a file
