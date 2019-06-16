@@ -17,12 +17,27 @@ public interface Serializer<T> {
     Writer<T> createWriter(OutputStream out);
 
     public static Serializer<String> linesUtf8() {
-        return LinesSerializer.LINES_UTF8;
+        return linesUtf8(LineDelimiter.LINE_FEED);
+    }
+
+    public static Serializer<String> linesUtf8(LineDelimiter delimiter) {
+        Preconditions.checkNotNull(delimiter);
+        if (delimiter == LineDelimiter.LINE_FEED) {
+            return LinesSerializer.LINES_UTF8_LF;
+        } else {
+            return LinesSerializer.LINES_UTF8_CR_LF;
+        }
     }
 
     public static Serializer<String> lines(Charset charset) {
         Preconditions.checkNotNull(charset);
-        return new LinesSerializer(charset);
+        return new LinesSerializer(charset, LineDelimiter.LINE_FEED);
+    }
+
+    public static Serializer<String> lines(Charset charset, LineDelimiter delimiter) {
+        Preconditions.checkNotNull(charset);
+        Preconditions.checkNotNull(delimiter);
+        return new LinesSerializer(charset, delimiter);
     }
 
     public static <T extends Serializable> Serializer<T> java() {

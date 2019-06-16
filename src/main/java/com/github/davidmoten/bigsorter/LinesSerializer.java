@@ -12,54 +12,59 @@ import java.nio.charset.StandardCharsets;
 
 class LinesSerializer implements Serializer<String> {
 
-	static final Serializer<String> LINES_UTF8 = new LinesSerializer(StandardCharsets.UTF_8);
+    static final Serializer<String> LINES_UTF8_LF = new LinesSerializer(StandardCharsets.UTF_8,
+            LineDelimiter.LINE_FEED);
+    static final Serializer<String> LINES_UTF8_CR_LF = new LinesSerializer(StandardCharsets.UTF_8,
+            LineDelimiter.CARRIAGE_RETURN_LINE_FEED);
 
-	private final Charset charset;
+    private final Charset charset;
+    private final LineDelimiter delimiter;
 
-	LinesSerializer(Charset charset) {
-		this.charset = charset;
-	}
+    LinesSerializer(Charset charset, LineDelimiter delimiter) {
+        this.charset = charset;
+        this.delimiter = delimiter;
+    }
 
-	@Override
-	public Reader<String> createReader(InputStream in) {
-		return new Reader<String>() {
-			BufferedReader br = new BufferedReader(new InputStreamReader(in, charset));
+    @Override
+    public Reader<String> createReader(InputStream in) {
+        return new Reader<String>() {
+            BufferedReader br = new BufferedReader(new InputStreamReader(in, charset));
 
-			@Override
-			public String read() throws IOException {
-				return br.readLine();
-			}
+            @Override
+            public String read() throws IOException {
+                return br.readLine();
+            }
 
-			@Override
-			public void close() throws IOException {
-				br.close();
-			}
-		};
-	}
+            @Override
+            public void close() throws IOException {
+                br.close();
+            }
+        };
+    }
 
-	@Override
-	public Writer<String> createWriter(OutputStream out) {
-		return new Writer<String>() {
+    @Override
+    public Writer<String> createWriter(OutputStream out) {
+        return new Writer<String>() {
 
-			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out, charset));
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out, charset));
 
-			@Override
-			public void write(String value) throws IOException {
-				bw.write(value);
-				bw.write("\n");
-			}
+            @Override
+            public void write(String value) throws IOException {
+                bw.write(value);
+                bw.write(delimiter.value());
+            }
 
-			@Override
-			public void close() throws IOException {
-				bw.close();
-			}
+            @Override
+            public void close() throws IOException {
+                bw.close();
+            }
 
             @Override
             public void flush() throws IOException {
                 bw.flush();
             }
 
-		};
-	}
+        };
+    }
 
 }

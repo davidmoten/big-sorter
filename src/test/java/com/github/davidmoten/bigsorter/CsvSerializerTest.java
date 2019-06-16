@@ -21,4 +21,5 @@ public class CsvSerializerTest {
         Serializer<CSVRecord> s = Serializer.csv(CSVFormat.DEFAULT, StandardCharsets.UTF_8);
         s.createReader(System.in).close();
     }
+    
 }
