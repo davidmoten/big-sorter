@@ -50,6 +50,8 @@ If you want to sort csv add this extra dependency:
     <version>1.7</version>
 </dependency>
 ```
+If you are new to Java or Maven, use Eclipse to create a new Maven project as in this [video](https://www.youtube.com/watch?v=X8lu7Oi23YQ). Add the above dependencies to the pom.xml at the root of the new project and then copy and paste chunks of code from this README.md to the main method of the App.java file. Hit ctrl-shift-o to automatically add the import statements. Then you can run the main method. Good luck!
+
 ## Serialization
 To read records from files or InputStreams and to write records to files we need to specify the *serialization* method to use.
 
