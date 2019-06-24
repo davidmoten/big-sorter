@@ -71,12 +71,12 @@ Sorter
   .sort();
 ```
 
-or for a different character set and in reverse order:
+or for a different character set with "\r\n" line delimiters and in reverse order:
 
 ```java
 Sorter
   // set both serializer and natural comparator
-  .serializerLines(charset)
+  .serializerLines(charset, LineDelimiter.CARRIAGE_RETURN_LINE_FEED)
   .comparator(Comparator.reverseOrder())
   .input(in)
   .output(out)
