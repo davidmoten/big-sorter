@@ -280,23 +280,7 @@ public final class Sorter<T> {
             }
         }
         log("completed inital split and sort, starting merge");
-        // merge the files in chunks repeatededly until only one remains
-        while (files.size() > 1) {
-            List<File> nextRound = new ArrayList<>();
-            for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
-                File merged = merge(files.subList(i, Math.min(files.size(), i + maxFilesPerMerge)));
-                nextRound.add(merged);
-            }
-            files = nextRound;
-        }
-        File result;
-        if (files.isEmpty()) {
-            output.delete();
-            output.createNewFile();
-            result = output;
-        } else {
-            result = files.get(0);
-        }
+        File result = merge(files);
         Files.move( //
                 result.toPath(), //
                 output.toPath(), //
@@ -307,7 +291,33 @@ public final class Sorter<T> {
         return output;
     }
 
-    private File merge(List<File> list) throws IOException {
+    public File merge(List<File> files) {
+        // merge the files in chunks repeatededly until only one remains
+        // TODO make a better guess at the chunk size so groups are more even
+        try {
+            while (files.size() > 1) {
+                List<File> nextRound = new ArrayList<>();
+                for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
+                    File merged = mergeGroup(files.subList(i, Math.min(files.size(), i + maxFilesPerMerge)));
+                    nextRound.add(merged);
+                }
+                files = nextRound;
+            }
+            File result;
+            if (files.isEmpty()) {
+                output.delete();
+                output.createNewFile();
+                result = output;
+            } else {
+                result = files.get(0);
+            }
+            return result;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private File mergeGroup(List<File> list) throws IOException {
         log("merging %s files", list.size());
         if (list.size() == 1) {
             return list.get(0);
