@@ -21,6 +21,7 @@ Status: *deployed to Maven Central*
   * fixed length binary records 
   * CSV
 * Serialization is customizable
+* Runtime complexity is O(n log(n))
 * 100% test coverage
 
 ## Algorithm
