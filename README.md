@@ -121,13 +121,12 @@ WIPER BLADE,35,12.55
 This example uses a comparator based on byte arrays of length 32. You can also use [`DataSerializer`](#example-using-the-dataserializer-helper) to do more fine grained extraction from the byte arrays (or to handle non-fixed length records).
 
 ```java
-InputStream in = ...
 Serializer<byte[]> serializer = Serializer.fixedSizeRecord(32);
 Sorter //
   .serializer(serializer) 
   .comparator((x, y) -> compare(x, y)) 
-  .input(in) 
-  .output(output) 
+  .input(new File("input.bin")) 
+  .output(new File("sorted.bin")) 
   .sort();
 ```
 You would of course have to implement the `compare(byte[], byte[])` function yourself ( returns -1 if x < y, 1 if x > y, 0 if x == y).
