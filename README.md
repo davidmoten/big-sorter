@@ -117,7 +117,7 @@ ALLEN KEY 5MM,27,3.80
 WIPER BLADE,35,12.55
 ```
 ### Example for sorting fixed length binary
-This example uses a comparator based on byte arrays of length 32. You can also use the `DataSerializer` helper described in another section.
+This example uses a comparator based on byte arrays of length 32. You can also use [`DataSerializer`](#example-using-the-dataserializer-helper) to do more fine grained extraction from the byte arrays (or to handle non-fixed length records).
 
 ```java
 InputStream in = ...
