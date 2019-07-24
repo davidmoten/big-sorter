@@ -116,6 +116,20 @@ name,number,cost
 ALLEN KEY 5MM,27,3.80
 WIPER BLADE,35,12.55
 ```
+### Example for sorting fixed length binary
+This example uses a comparator based on byte arrays of length 32. You can also use the `DataSerializer` helper described in another section.
+
+```java
+InputStream in = ...
+Serializer<byte[]> serializer = Serializer.fixedSizeRecord(32);
+Sorter //
+  .serializer(serializer) 
+  .comparator((x, y) -> compare(x, y)) 
+  .input(in) 
+  .output(output) 
+  .sort();
+```
+You would of course have to implement the `compare(byte[], byte[])` function yourself ( returns -1 if x < y, 1 if x > y, 0 if x == y).
 
 ### Example using Java IO Serialization
 If each record has been written to the input file using `ObjectOutputStream` then we specify the *java()* Serializer:
