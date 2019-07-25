@@ -76,7 +76,6 @@ final class JsonArraySerializer implements Serializer<ObjectNode> {
             @Override
             public void flush() throws IOException {
                 w.flush();
-
             }
 
             @Override

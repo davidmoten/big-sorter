@@ -1,6 +1,7 @@
 package com.github.davidmoten.bigsorter;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -225,7 +226,6 @@ public class SorterTest {
         assertNull(reader.read());
     }
 
-    
     private static final class Pair {
         final long a;
         final long b;
@@ -577,6 +577,45 @@ public class SorterTest {
         assertEquals("fred", node.get("name").asText());
         assertEquals(23, node.get("age").asInt());
         assertNull(r.read());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testJsonNotArray() throws IOException {
+        String s = "{\"name\":\"john\"}";
+        Serializer.jsonArray().createReader(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @Test(expected = UncheckedIOException.class)
+    public void testJsonArrayIoException() throws IOException {
+        InputStream in = new InputStream() {
+
+            @Override
+            public int read() throws IOException {
+                throw new IOException("boo");
+            }
+        };
+        Serializer.jsonArray().createReader(in);
+    }
+    
+    @Test
+    public void testJsonArrayWriterFlush() throws IOException {
+        boolean[] flushed = new boolean[1];
+        OutputStream out = new OutputStream() {
+
+            @Override
+            public void write(int b) throws IOException {
+            }
+
+            @Override
+            public void flush() throws IOException {
+                flushed[0] = true;
+            }
+            
+        };
+        Writer<ObjectNode> w = Serializer.jsonArray().createWriter(out);
+        assertFalse(flushed[0]);
+        w.flush();
+        assertTrue(flushed[0]);
     }
 
     static void printOutput() throws IOException {
