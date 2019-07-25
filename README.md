@@ -161,6 +161,14 @@ Sorter //
   .sort();
 ```
 
+and we get:
+```json
+[
+{ "name": "anne", "age": 31 },
+{ "name": "fred", "age": 23 }
+]
+```
+
 ### Example using Java IO Serialization
 If each record has been written to the input file using `ObjectOutputStream` then we specify the *java()* Serializer:
 
