@@ -34,6 +34,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 public class SorterTest {
 
     private static final File OUTPUT = new File("target/out.txt");
@@ -223,6 +225,7 @@ public class SorterTest {
         assertNull(reader.read());
     }
 
+    
     private static final class Pair {
         final long a;
         final long b;
@@ -418,8 +421,7 @@ public class SorterTest {
                     .input(input) //
                     .output(OUTPUT) //
                     .sort();
-            System.out.println(
-                    n + " integers sorted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
+            System.out.println(n + " integers sorted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
             // ensure ascending
             try (InputStream in = new BufferedInputStream(new FileInputStream(OUTPUT))) {
                 Reader<Integer> reader = serializer.createReader(in);
@@ -444,9 +446,8 @@ public class SorterTest {
     public void testCsvWithHeader() throws IOException {
         String s = "word1,number,word2\n\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
-        Serializer<CSVRecord> ser = Serializer.csv(
-                CSVFormat.DEFAULT.withFirstRecordAsHeader().withRecordSeparator("\n"),
-                StandardCharsets.UTF_8);
+        Serializer<CSVRecord> ser = Serializer
+                .csv(CSVFormat.DEFAULT.withFirstRecordAsHeader().withRecordSeparator("\n"), StandardCharsets.UTF_8);
         Comparator<CSVRecord> comparator = (x, y) -> {
             int a = Integer.parseInt(x.get("number"));
             int b = Integer.parseInt(y.get("number"));
@@ -469,9 +470,7 @@ public class SorterTest {
     public void testCsvWithoutHeader() throws IOException {
         String s = "\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
-        Serializer<CSVRecord> ser = Serializer.csv(
-                CSVFormat.DEFAULT.withRecordSeparator("\n"),
-                StandardCharsets.UTF_8);
+        Serializer<CSVRecord> ser = Serializer.csv(CSVFormat.DEFAULT.withRecordSeparator("\n"), StandardCharsets.UTF_8);
         Comparator<CSVRecord> comparator = (x, y) -> {
             int a = Integer.parseInt(x.get(1));
             int b = Integer.parseInt(y.get(1));
@@ -490,7 +489,6 @@ public class SorterTest {
         assertNull(r.read());
     }
 
-    
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidMaxMergeFiles() throws IOException {
         File input = new File("target/input");
@@ -559,6 +557,26 @@ public class SorterTest {
     @Test(expected = IllegalArgumentException.class)
     public void testFixedSizeRecordInvalidSize() {
         Serializer.fixedSizeRecord(0);
+    }
+
+    @Test
+    public void testJson() throws IOException {
+        String s = "[ {\"name\":\"fred\",\"age\": 23 }, {\"name\":\"anne\",\"age\": 31 } ]";
+
+        Serializer<ObjectNode> ser = Serializer.jsonArray();
+        Sorter.serializer(ser) //
+                .comparator((x, y) -> x.get("name").asText().compareTo(y.get("name").asText())) //
+                .input(s) //
+                .output(OUTPUT) //
+                .sort();
+        Reader<ObjectNode> r = ser.createReader(new FileInputStream(OUTPUT));
+        ObjectNode node = r.read();
+        assertEquals("anne", node.get("name").asText());
+        assertEquals(31, node.get("age").asInt());
+        node = r.read();
+        assertEquals("fred", node.get("name").asText());
+        assertEquals(23, node.get("age").asInt());
+        assertNull(r.read());
     }
 
     static void printOutput() throws IOException {

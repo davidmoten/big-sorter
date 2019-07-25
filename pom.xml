@@ -37,6 +37,7 @@
         <changelog.version>2.2</changelog.version>
         <coverage.reports.dir>${project.build.directory}/target/coverage-reports</coverage.reports.dir>
         <exec.version>1.6.0</exec.version>
+        <jackson.version>2.9.9</jackson.version>
     </properties>
 
     <licenses>
@@ -126,6 +127,13 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>1.7</version>
+            <optional>true</optional>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
             <optional>true</optional>
         </dependency>
 

@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.davidmoten.guavamini.Preconditions;
 
 public interface Serializer<T> {
@@ -54,4 +55,9 @@ public interface Serializer<T> {
         Preconditions.checkNotNull(charset, "charset cannot be null");
         return new CsvSerializer(format, charset);
     }
+    
+    public static Serializer<ObjectNode> jsonArray() {
+        return JsonArraySerializer.INSTANCE;
+    }
+    
 }
