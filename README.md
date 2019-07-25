@@ -20,6 +20,7 @@ Status: *deployed to Maven Central*
   * DataInputStream base
   * fixed length binary records 
   * CSV
+  * JSON arrays
 * Serialization is customizable
 * Runtime complexity is O(n log(n))
 * 100% test coverage
@@ -49,6 +50,15 @@ If you want to sort csv add this extra dependency:
     <groupId>org.apache.commons</groupId>
     <artifactId>commons-csv</artifactId>
     <version>1.7</version>
+</dependency>
+```
+
+If you want to sort JSON arrays add this extra dependency:
+```xml
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.9.9</version>
 </dependency>
 ```
 If you are new to Java or Maven, go to [big-sorter-example](https://github.com/davidmoten/big-sorter-example).
@@ -130,6 +140,25 @@ Sorter //
   .sort();
 ```
 You would of course have to implement the `compare(byte[], byte[])` function yourself ( returns -1 if x < y, 1 if x > y, 0 if x == y).
+
+### Example for sorting a JSON array
+Given a JSON array like:
+
+```json
+[
+{ "name": "fred", "age": 23 },
+{ "name": "anne", "age": 31 },
+```
+We can sort the elements by the "name" field like this:
+
+```java
+Sorter //
+  .serializer(Serializer.jsonArray()) 
+  .comparator((x, y) -> x.get("name").asText().compareTo(y.get("name").asText())) 
+  .input(new File("input.json")) 
+  .output(new File("sorted.json")) 
+  .sort();
+```
 
 ### Example using Java IO Serialization
 If each record has been written to the input file using `ObjectOutputStream` then we specify the *java()* Serializer:
