@@ -168,6 +168,7 @@ and we get:
 { "name": "fred", "age": 23 }
 ]
 ```
+If your structure is more complex than this (for example the array might not be top-level) then copy and customize the class [JsonArraySerializer.java](src/main/java/com/github/davidmoten/bigsorter/JsonArraySerializer.java).
 
 ### Example using Java IO Serialization
 If each record has been written to the input file using `ObjectOutputStream` then we specify the *java()* Serializer:
