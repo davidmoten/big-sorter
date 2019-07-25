@@ -9,7 +9,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
 
-class JavaSerializer<T extends Serializable> implements Serializer<T> {
+final class JavaSerializer<T extends Serializable> implements Serializer<T> {
 
 	private static final JavaSerializer<Serializable> INSTANCE = new JavaSerializer<>();
 	

@@ -10,7 +10,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-class LinesSerializer implements Serializer<String> {
+final class LinesSerializer implements Serializer<String> {
 
     static final Serializer<String> LINES_UTF8_LF = new LinesSerializer(StandardCharsets.UTF_8,
             LineDelimiter.LINE_FEED);
