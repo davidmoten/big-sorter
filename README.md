@@ -147,7 +147,8 @@ Given a JSON array like:
 ```json
 [
 { "name": "fred", "age": 23 },
-{ "name": "anne", "age": 31 },
+{ "name": "anne", "age": 31 }
+]
 ```
 We can sort the elements by the "name" field like this:
 
