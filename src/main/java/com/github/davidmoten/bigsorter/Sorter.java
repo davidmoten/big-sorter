@@ -27,6 +27,7 @@ import java.util.PriorityQueue;
 import java.util.function.Consumer;
 
 import com.github.davidmoten.guavamini.Preconditions;
+import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
 //NotThreadSafe
 public final class Sorter<T> {
@@ -291,7 +292,8 @@ public final class Sorter<T> {
         return output;
     }
 
-    private File merge(List<File> files) {
+    @VisibleForTesting
+    File merge(List<File> files) {
         // merge the files in chunks repeatededly until only one remains
         // TODO make a better guess at the chunk size so groups are more even
         try {
