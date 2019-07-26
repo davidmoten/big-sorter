@@ -84,7 +84,6 @@ public class JsonSorterMain {
                 .output(new File("target/output.json")) //
                 .loggerStdOut() //
                 .sort();
-
     }
 
 }
