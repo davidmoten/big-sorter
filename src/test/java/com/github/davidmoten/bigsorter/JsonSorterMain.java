@@ -11,7 +11,7 @@ import java.util.Iterator;
 
 public class JsonSorterMain {
 
-    private static final long N = 1000000;
+    private static final long N = 10000000;
 
     public static void main(String[] args) throws IOException {
 
