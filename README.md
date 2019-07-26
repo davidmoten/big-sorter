@@ -94,7 +94,7 @@ Sorter
   .sort();
 ```
 ### Example for sorting CSV
-Note that for sorting CSV you need to add the *commons-csv* dependency. See [Gettting started](#getting-started).
+Note that for sorting CSV you need to add the *commons-csv* dependency (see [Gettting started](#getting-started)).
 
 Given the CSV file below, we will sort on the second column (the "number" column):
 ```
@@ -144,7 +144,7 @@ Sorter //
 You would of course have to implement the `compare(byte[], byte[])` function yourself ( returns -1 if x < y, 1 if x > y, 0 if x == y).
 
 ### Example for sorting a JSON array
-Note that for sorting JSON you need to add the *jackson-databind* dependency. See [Gettting started](#getting-started).
+Note that for sorting JSON you need to add the *jackson-databind* dependency (see [Gettting started](#getting-started)).
 
 Given a JSON array like:
 
