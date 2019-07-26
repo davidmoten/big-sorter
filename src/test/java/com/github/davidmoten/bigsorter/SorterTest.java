@@ -597,7 +597,19 @@ public class SorterTest {
         };
         Serializer.jsonArray().createReader(in);
     }
-    
+
+    @Test
+    public void testJsonArrayWriterCloseTwice() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (Writer<ObjectNode> w = Serializer.jsonArray().createWriter(out)) {
+            w.close();
+            // should write newline and ]
+            assertEquals(2, out.size());
+            w.close();
+            assertEquals(2, out.size());
+        }
+    }
+
     @Test
     public void testJsonArrayWriterFlush() throws IOException {
         boolean[] flushed = new boolean[1];
@@ -611,18 +623,20 @@ public class SorterTest {
             public void flush() throws IOException {
                 flushed[0] = true;
             }
-            
+
         };
         Writer<ObjectNode> w = Serializer.jsonArray().createWriter(out);
         assertFalse(flushed[0]);
         w.flush();
         assertTrue(flushed[0]);
     }
-    
-    @Test(expected=UncheckedIOException.class)
+
+    @Test(expected = UncheckedIOException.class)
     public void testMergeFileWhenDoesNotExist() {
-        Sorter<String> sorter = new Sorter<String>(new ByteArrayInputStream(new byte[0]), Serializer.linesUtf8(), OUTPUT, Comparator.naturalOrder(), 3,1000,x -> {}, 8192, new File(System.getProperty("java.io.tmpdir")));
-        sorter.merge(Lists.newArrayList(new File("target/doesnotexist"),new File("target/doesnotexist2")));
+        Sorter<String> sorter = new Sorter<String>(new ByteArrayInputStream(new byte[0]), Serializer.linesUtf8(),
+                OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
+                }, 8192, new File(System.getProperty("java.io.tmpdir")));
+        sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
     }
 
     static void printOutput() throws IOException {
