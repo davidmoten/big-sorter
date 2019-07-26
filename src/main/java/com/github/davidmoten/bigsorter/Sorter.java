@@ -291,7 +291,7 @@ public final class Sorter<T> {
         return output;
     }
 
-    public File merge(List<File> files) {
+    private File merge(List<File> files) {
         // merge the files in chunks repeatededly until only one remains
         // TODO make a better guess at the chunk size so groups are more even
         try {
