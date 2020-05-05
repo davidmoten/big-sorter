@@ -9,6 +9,8 @@ Status: *deployed to Maven Central*
 
 <img src="src/docs/big-sorter-annotated.png" style="width:100%"/>
 
+Note that the merge step in the diagram above will happen repeatedly till one file remains.
+
 ## Features
 
 * Easy to use builder
