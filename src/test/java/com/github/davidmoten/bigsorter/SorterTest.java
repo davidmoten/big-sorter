@@ -123,9 +123,9 @@ public class SorterTest {
                 .serializerLinesUtf8() //
                 .comparator(Comparator.naturalOrder())
                 .input("c\ndef\nab") //
-                .output(OUTPUT) //
                 .filter(line -> !line.startsWith("a")) //
                 .map(line -> "x" + line) //
+                .output(OUTPUT) //
                 .sort();
         assertEquals("xc\nxdef", readOutput());
     }
@@ -136,9 +136,9 @@ public class SorterTest {
                 .serializerLinesUtf8() //
                 .comparator(Comparator.naturalOrder())
                 .input("c\ndef\nab") //
-                .output(OUTPUT) //
                 .filter(line -> !line.startsWith("a")) //
                 .map(line -> "a" + line) //
+                .output(OUTPUT) //
                 .sort();
         assertEquals("ac\nadef", readOutput());
     }
@@ -148,9 +148,9 @@ public class SorterTest {
         Sorter //
                 .serializerLinesUtf8() //
                 .comparator(Comparator.naturalOrder()).input("c\ndef\nab") //
-                .output(OUTPUT) //
                 .filter(line -> !line.startsWith("a")) //
                 .flatMap(line -> Lists.newArrayList(line, line)) //
+                .output(OUTPUT) //
                 .sort();
         assertEquals("c\nc\ndef\ndef", readOutput());
     }
@@ -159,10 +159,11 @@ public class SorterTest {
     public void testLinesStreamTransform() throws IOException {
         Sorter //
                 .serializerLinesUtf8() //
-                .comparator(Comparator.naturalOrder()).input("c\ndef\nab") //
-                .output(OUTPUT) //
+                .comparator(Comparator.naturalOrder()) //
+                .input("c\ndef\nab") //
                 .transformStream(s -> s.filter(line -> !line.startsWith("a"))) //
                 .transformStream(s -> s.map(line -> "a" + line)) //
+                .output(OUTPUT) //
                 .sort();
         assertEquals("ac\nadef", readOutput());
     }

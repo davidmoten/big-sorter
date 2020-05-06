@@ -153,6 +153,41 @@ public final class Sorter<T> {
         Builder3(Builder<T> b) {
             this.b = b;
         }
+        
+        public Builder3<T> filter(Predicate<? super T> predicate) {
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            return transform(r -> currentTransform.apply(r).filter(predicate));
+        }
+        
+        @SuppressWarnings("unchecked")
+        public Builder3<T> map(Function<? super T, ? extends T> mapper) {
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            return transform(r -> ((Reader<T>) currentTransform.apply(r)).map(mapper));
+        }
+        
+        @SuppressWarnings("unchecked")
+        public Builder3<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            return transform(r -> ((Reader<T>) currentTransform.apply(r)).flatMap(mapper));
+        }
+
+        @SuppressWarnings("unchecked")
+        public Builder3<T> transform(
+                Function<? super Reader<T>, ? extends Reader<? extends T>> transform) {
+            Preconditions.checkNotNull(transform, "transform cannot be null");
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            b.transform = r -> transform.apply((Reader<T>) currentTransform.apply(r));
+            return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public Builder3<T> transformStream(
+                Function<? super Stream<T>, ? extends Stream<? extends T>> transform) {
+            Preconditions.checkNotNull(transform, "transform cannot be null");
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            b.transform = r -> ((Reader<T>) currentTransform.apply(r)).transform(transform);
+            return this;
+        }
 
         public Builder4<T> output(File output) {
             Preconditions.checkNotNull(output, "output cannot be null");
@@ -212,41 +247,6 @@ public final class Sorter<T> {
         public Builder4<T> tempDirectory(File directory) {
             Preconditions.checkNotNull(directory, "tempDirectory cannot be null");
             b.tempDirectory = directory;
-            return this;
-        }
-        
-        public Builder4<T> filter(Predicate<? super T> predicate) {
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            return transform(r -> currentTransform.apply(r).filter(predicate));
-        }
-        
-        @SuppressWarnings("unchecked")
-        public Builder4<T> map(Function<? super T, ? extends T> mapper) {
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            return transform(r -> ((Reader<T>) currentTransform.apply(r)).map(mapper));
-        }
-        
-        @SuppressWarnings("unchecked")
-        public Builder4<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            return transform(r -> ((Reader<T>) currentTransform.apply(r)).flatMap(mapper));
-        }
-
-        @SuppressWarnings("unchecked")
-        public Builder4<T> transform(
-                Function<? super Reader<T>, ? extends Reader<? extends T>> transform) {
-            Preconditions.checkNotNull(transform, "transform cannot be null");
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            b.transform = r -> transform.apply((Reader<T>) currentTransform.apply(r));
-            return this;
-        }
-
-        @SuppressWarnings("unchecked")
-        public Builder4<T> transformStream(
-                Function<? super Stream<T>, ? extends Stream<? extends T>> transform) {
-            Preconditions.checkNotNull(transform, "transform cannot be null");
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            b.transform = r -> ((Reader<T>) currentTransform.apply(r)).transform(transform);
             return this;
         }
         
