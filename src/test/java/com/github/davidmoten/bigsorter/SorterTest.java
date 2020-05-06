@@ -116,6 +116,56 @@ public class SorterTest {
     public void testLinesCustomCharset() throws IOException {
         assertEquals("ab\nc\ndef", sortLines("c\ndef\nab", StandardCharsets.UTF_8));
     }
+    
+    @Test
+    public void testLinesFilterAndMap() throws IOException {
+        Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder())
+                .input("c\ndef\nab") //
+                .output(OUTPUT) //
+                .filter(line -> !line.startsWith("a")) //
+                .map(line -> "x" + line) //
+                .sort();
+        assertEquals("xc\nxdef", readOutput());
+    }
+    
+    @Test
+    public void testLinesFilterThenMapOrderedCorrectly() throws IOException {
+        Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder())
+                .input("c\ndef\nab") //
+                .output(OUTPUT) //
+                .filter(line -> !line.startsWith("a")) //
+                .map(line -> "a" + line) //
+                .sort();
+        assertEquals("ac\nadef", readOutput());
+    }
+    
+    @Test
+    public void testLinesFlatMap() throws IOException {
+        Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder()).input("c\ndef\nab") //
+                .output(OUTPUT) //
+                .filter(line -> !line.startsWith("a")) //
+                .flatMap(line -> Lists.newArrayList(line, line)) //
+                .sort();
+        assertEquals("c\nc\ndef\ndef", readOutput());
+    }
+    
+    @Test
+    public void testLinesStreamTransform() throws IOException {
+        Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder()).input("c\ndef\nab") //
+                .output(OUTPUT) //
+                .transformStream(s -> s.filter(line -> !line.startsWith("a"))) //
+                .transformStream(s -> s.map(line -> "a" + line)) //
+                .sort();
+        assertEquals("ac\nadef", readOutput());
+    }
 
     @Test
     public void testJavaSerializer() throws IOException {
@@ -226,7 +276,7 @@ public class SorterTest {
         assertEquals(3, (long) reader.read().a);
         assertNull(reader.read());
     }
-
+    
     private static final class Pair {
         final long a;
         final long b;
@@ -246,6 +296,10 @@ public class SorterTest {
                 .maxItemsPerFile(2) //
                 .sort();
 
+        return readOutput();
+    }
+
+    private static String readOutput() throws IOException {
         return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
     }
 
@@ -259,7 +313,7 @@ public class SorterTest {
                 .maxItemsPerFile(2) //
                 .sort();
 
-        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+        return readOutput();
     }
 
     private static String sortLinesReverse(String s) throws IOException {
@@ -272,7 +326,7 @@ public class SorterTest {
                 .maxItemsPerFile(2) //
                 .sort();
 
-        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+        return readOutput();
     }
 
     private static String sortLines(String s, Charset charset) throws IOException {
@@ -285,7 +339,7 @@ public class SorterTest {
                 .bufferSize(128) //
                 .sort();
 
-        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+        return readOutput();
     }
 
     private static String sort(String s) throws IOException {
@@ -302,7 +356,7 @@ public class SorterTest {
                 .tempDirectory(new File("target")) //
                 .sort();
 
-        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+        return readOutput();
     }
 
     private static String sortLogging(String s) throws IOException {
@@ -320,7 +374,7 @@ public class SorterTest {
                 .loggerStdOut() //
                 .sort();
 
-        return Files.readAllLines(OUTPUT.toPath()).stream().collect(Collectors.joining("\n"));
+        return readOutput();
     }
 
     private static void writeStringToFile(String s, File f) throws FileNotFoundException {
@@ -635,7 +689,7 @@ public class SorterTest {
     public void testMergeFileWhenDoesNotExist() {
         Sorter<String> sorter = new Sorter<String>(new ByteArrayInputStream(new byte[0]), Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
-                }, 8192, new File(System.getProperty("java.io.tmpdir")));
+                }, 8192, new File(System.getProperty("java.io.tmpdir")), r -> r);
         sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
     }
 

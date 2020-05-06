@@ -25,6 +25,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import com.github.davidmoten.guavamini.Preconditions;
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
@@ -41,15 +44,18 @@ public final class Sorter<T> {
     private final Consumer<? super String> log;
     private final int bufferSize;
     private final File tempDirectory;
+    private final Function<? super Reader<T>, ? extends Reader<? extends T>> transform;
     private long count = 0;
 
     Sorter(InputStream input, Serializer<T> serializer, File output,
             Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
-            Consumer<? super String> log, int bufferSize, File tempDirectory) {
-        Preconditions.checkNotNull(input, "input must be specified");
-        Preconditions.checkNotNull(serializer, "serializer must be specified");
-        Preconditions.checkNotNull(output, "output must be specified");
-        Preconditions.checkNotNull(comparator, "comparator must be specified");
+            Consumer<? super String> log, int bufferSize, File tempDirectory,
+            Function<? super Reader<T>, ? extends Reader<? extends T>> transform) {
+        Preconditions.checkNotNull(input, "input cannot be null");
+        Preconditions.checkNotNull(serializer, "serializer cannot be null");
+        Preconditions.checkNotNull(output, "output cannot be null");
+        Preconditions.checkNotNull(comparator, "comparator cannot be null");
+        Preconditions.checkNotNull(transform, "transform cannot be null");
         this.input = input;
         this.serializer = serializer;
         this.output = output;
@@ -59,6 +65,7 @@ public final class Sorter<T> {
         this.log = log;
         this.bufferSize = bufferSize;
         this.tempDirectory = tempDirectory;
+        this.transform = transform;
     }
 
     public static <T> Builder<T> serializer(Serializer<T> serializer) {
@@ -95,6 +102,7 @@ public final class Sorter<T> {
         private Consumer<? super String> logger = null;
         private int bufferSize = 8192;
         private File tempDirectory = new File(System.getProperty("java.io.tmpdir"));
+        private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
@@ -206,7 +214,42 @@ public final class Sorter<T> {
             b.tempDirectory = directory;
             return this;
         }
+        
+        public Builder4<T> filter(Predicate<? super T> predicate) {
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            return transform(r -> currentTransform.apply(r).filter(predicate));
+        }
+        
+        @SuppressWarnings("unchecked")
+        public Builder4<T> map(Function<? super T, ? extends T> mapper) {
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            return transform(r -> ((Reader<T>) currentTransform.apply(r)).map(mapper));
+        }
+        
+        @SuppressWarnings("unchecked")
+        public Builder4<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            return transform(r -> ((Reader<T>) currentTransform.apply(r)).flatMap(mapper));
+        }
 
+        @SuppressWarnings("unchecked")
+        public Builder4<T> transform(
+                Function<? super Reader<T>, ? extends Reader<? extends T>> transform) {
+            Preconditions.checkNotNull(transform, "transform cannot be null");
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            b.transform = r -> transform.apply((Reader<T>) currentTransform.apply(r));
+            return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public Builder4<T> transformStream(
+                Function<? super Stream<T>, ? extends Stream<? extends T>> transform) {
+            Preconditions.checkNotNull(transform, "transform cannot be null");
+            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+            b.transform = r -> ((Reader<T>) currentTransform.apply(r)).transform(transform);
+            return this;
+        }
+        
         /**
          * Sorts the input and writes the result to the given output file. If an
          * {@link IOException} occurs then it is thrown wrapped in
@@ -228,7 +271,8 @@ public final class Sorter<T> {
 
         private void sort(InputStream input) {
             Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator,
-                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory);
+                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
+                    b.transform);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -258,7 +302,7 @@ public final class Sorter<T> {
         count = 0;
         List<File> files = new ArrayList<>();
         log("starting sort");
-        try (Reader<T> reader = serializer.createReader(input)) {
+        try (Reader<? extends T> reader = transform.apply(serializer.createReader(input))) {
             int i = 0;
             List<T> list = new ArrayList<>();
             while (true) {
@@ -300,7 +344,8 @@ public final class Sorter<T> {
             while (files.size() > 1) {
                 List<File> nextRound = new ArrayList<>();
                 for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
-                    File merged = mergeGroup(files.subList(i, Math.min(files.size(), i + maxFilesPerMerge)));
+                    File merged = mergeGroup(
+                            files.subList(i, Math.min(files.size(), i + maxFilesPerMerge)));
                     nextRound.add(merged);
                 }
                 files = nextRound;
