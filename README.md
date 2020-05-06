@@ -71,6 +71,8 @@ To read records from files or InputStreams and to write records to files we need
 
 ### Example for sorting text lines
 
+Make special note of the ability to do functional style transforms of the input data (`filter`, `map`).
+
 ```java
 File in = ...
 File out = ...
@@ -78,6 +80,9 @@ Sorter
   // set both serializer and natural comparator
   .linesUtf8()
   .input(in)
+  .filter(line -> !line.isEmpty())
+  .filter(line -> !line.startsWith("#"))
+  .map(line -> line.toLowerCase())
   .output(out)
   .maxFilesPerMerge(100) // default is 100
   .maxItemsPerFile(100000) // default is 100,000
@@ -264,6 +269,35 @@ In that case make a type T that can be header or an item and have your serialize
 
 ### Custom serialization
 To fully do your own thing you need to implement the `Serializer` interface.
+
+## Filtering, transforming input
+Your large input file might have a lot of irrelevant stuff in it that you want to ignore or you might want to select only the columns from a csv line that you are interested in. You can use the java.util.Stream API to modify the input or use direct methods `filter`, `map`, `flatMap`:
+
+```java
+Sorter
+  // set both serializer and natural comparator
+  .linesUtf8()
+  .input(in)
+  .filter(line -> !line.isEmpty())
+  .filter(line -> !line.startsWith("#"))
+  .map(line -> line.toLowerCase())
+  .output(out)
+  .sort();
+```
+or
+
+```java
+Sorter
+  // set both serializer and natural comparator
+  .linesUtf8()
+  .input(in)
+  .transformStream(stream -> 
+      stream.filter(line -> !line.isEmpty())
+            .filter(line -> !line.startsWith("#"))
+            .map(line -> line.toLowerCase()))
+  .output(out)
+  .sort();
+```  
 
 ## Logging
 If you want some insight into the progress of the sort then set a logger in the builder:
