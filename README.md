@@ -95,6 +95,28 @@ Sorter
   .output(out)
   .sort();
 ```
+### Filtering text lines
+You might have irrelevant information that you want to ignore in the input or indeed you might want to transform the input first (like just selecting the bits you want). To do this you specifiy the input as an InputStream and transform that InputStream as you need. For example:
+
+```
+File file = ...;
+Stream<byte[]> stream = 
+  new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))
+    .lines()
+    .filter(line -> line.length() >= MIN_LENGTH && line.length <= MAX_LENGTH)
+    .map(line -> (line + "\n").getBytes(StandardCharsets.UTF_8));
+// use io-extras dependency
+InputStream in = IOUtil.toInputStream(stream);
+
+// then sort
+Sorter
+  .linesUtf8()
+  .input(in)
+  .output(out)
+  .sort(); 
+```
+The above example makes use of the [io-extras](https://github.com/davidmoten/io-extras) dependency.
+
 ### Example for sorting CSV
 Note that for sorting CSV you need to add the *commons-csv* dependency (see [Gettting started](#getting-started)).
 
