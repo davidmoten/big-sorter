@@ -167,6 +167,20 @@ public class SorterTest {
                 .sort();
         assertEquals("ac\nadef", readOutput());
     }
+    
+    @Test
+    public void testUnique() throws IOException {
+        Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder())
+                .input("c\ndef\nab\nc\nab\nc\ndef") //
+                .output(OUTPUT) //
+                .unique() //
+                .maxItemsPerFile(2) //
+                .loggerStdOut() //
+                .sort();
+        assertEquals("ab\nc\ndef", readOutput());
+    }
 
     @Test
     public void testJavaSerializer() throws IOException {
@@ -690,7 +704,7 @@ public class SorterTest {
     public void testMergeFileWhenDoesNotExist() {
         Sorter<String> sorter = new Sorter<String>(new ByteArrayInputStream(new byte[0]), Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
-                }, 8192, new File(System.getProperty("java.io.tmpdir")), r -> r);
+                }, 8192, new File(System.getProperty("java.io.tmpdir")), r -> r, false);
         sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
     }
 

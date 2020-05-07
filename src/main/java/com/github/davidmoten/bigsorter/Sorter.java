@@ -45,12 +45,14 @@ public final class Sorter<T> {
     private final int bufferSize;
     private final File tempDirectory;
     private final Function<? super Reader<T>, ? extends Reader<? extends T>> transform;
+    private final boolean unique;
     private long count = 0;
+    
 
     Sorter(InputStream input, Serializer<T> serializer, File output,
             Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
             Consumer<? super String> log, int bufferSize, File tempDirectory,
-            Function<? super Reader<T>, ? extends Reader<? extends T>> transform) {
+            Function<? super Reader<T>, ? extends Reader<? extends T>> transform, boolean unique) {
         Preconditions.checkNotNull(input, "input cannot be null");
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
         Preconditions.checkNotNull(output, "output cannot be null");
@@ -66,6 +68,7 @@ public final class Sorter<T> {
         this.bufferSize = bufferSize;
         this.tempDirectory = tempDirectory;
         this.transform = transform;
+        this.unique = unique;
     }
 
     public static <T> Builder<T> serializer(Serializer<T> serializer) {
@@ -103,6 +106,7 @@ public final class Sorter<T> {
         private int bufferSize = 8192;
         private File tempDirectory = new File(System.getProperty("java.io.tmpdir"));
         private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
+        public boolean unique;
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
@@ -215,6 +219,15 @@ public final class Sorter<T> {
             b.maxItemsPerFile = value;
             return this;
         }
+        
+        public Builder4<T> unique(boolean value) {
+            b.unique = value;
+            return this;
+        }
+        
+        public Builder4<T> unique() {
+            return unique(true);
+        }
 
         public Builder4<T> logger(Consumer<? super String> logger) {
             Preconditions.checkNotNull(logger, "logger cannot be null");
@@ -272,7 +285,7 @@ public final class Sorter<T> {
         private void sort(InputStream input) {
             Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator,
                     b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                    b.transform);
+                    b.transform, b.unique);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -302,6 +315,7 @@ public final class Sorter<T> {
         count = 0;
         List<File> files = new ArrayList<>();
         log("starting sort");
+        log("unique = " + unique);
         try (Reader<? extends T> reader = transform.apply(serializer.createReader(input))) {
             int i = 0;
             List<T> list = new ArrayList<>();
@@ -382,9 +396,13 @@ public final class Sorter<T> {
             PriorityQueue<State<T>> q = new PriorityQueue<>(
                     (x, y) -> comparator.compare(x.value, y.value));
             q.addAll(states);
+            T last = null;
             while (!q.isEmpty()) {
                 State<T> state = q.poll();
-                writer.write(state.value);
+                if (!unique || last == null || comparator.compare(state.value, last) != 0) {
+                    writer.write(state.value);
+                    last = state.value;
+                }
                 state.value = state.reader.readAutoClosing();
                 if (state.value != null) {
                     q.offer(state);
@@ -436,8 +454,12 @@ public final class Sorter<T> {
     private void writeToFile(List<T> list, File f) throws FileNotFoundException, IOException {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f), bufferSize);
                 Writer<T> writer = serializer.createWriter(out)) {
+            T last = null;
             for (T t : list) {
-                writer.write(t);
+                if (!unique || last == null || comparator.compare(t, last) != 0) {
+                    writer.write(t);
+                    last = t;
+                }
             }
         }
     }
