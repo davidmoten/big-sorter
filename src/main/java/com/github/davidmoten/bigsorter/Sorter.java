@@ -20,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -27,15 +28,18 @@ import java.util.PriorityQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.github.davidmoten.guavamini.Lists;
 import com.github.davidmoten.guavamini.Preconditions;
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
 //NotThreadSafe
 public final class Sorter<T> {
 
-    private final InputStream input;
+    private final List<Supplier<? extends InputStream>> inputs;
     private final Serializer<T> serializer;
     private final File output;
     private final Comparator<? super T> comparator;
@@ -49,16 +53,16 @@ public final class Sorter<T> {
     private long count = 0;
     
 
-    Sorter(InputStream input, Serializer<T> serializer, File output,
+    Sorter(List<Supplier<? extends InputStream>> inputs, Serializer<T> serializer, File output,
             Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
             Consumer<? super String> log, int bufferSize, File tempDirectory,
             Function<? super Reader<T>, ? extends Reader<? extends T>> transform, boolean unique) {
-        Preconditions.checkNotNull(input, "input cannot be null");
+        Preconditions.checkNotNull(inputs, "inputs cannot be null");
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
         Preconditions.checkNotNull(output, "output cannot be null");
         Preconditions.checkNotNull(comparator, "comparator cannot be null");
         Preconditions.checkNotNull(transform, "transform cannot be null");
-        this.input = input;
+        this.inputs = inputs;
         this.serializer = serializer;
         this.output = output;
         this.comparator = comparator;
@@ -95,13 +99,12 @@ public final class Sorter<T> {
     public static final class Builder<T> {
         private static final DateTimeFormatter DATE_TIME_PATTERN = DateTimeFormatter
                 .ofPattern("yyyy-MM-dd HH:mm:ss.Sxxxx");
-        private InputStream input;
+        private List<Supplier<? extends InputStream>> inputs = Lists.newArrayList();
         private final Serializer<T> serializer;
         private File output;
         private Comparator<? super T> comparator;
         private int maxFilesPerMerge = 100;
         private int maxItemsPerFile = 100000;
-        private File inputFile;
         private Consumer<? super String> logger = null;
         private int bufferSize = 8192;
         private File tempDirectory = new File(System.getProperty("java.io.tmpdir"));
@@ -126,29 +129,66 @@ public final class Sorter<T> {
             this.b = b;
         }
 
-        public Builder3<T> input(String string, Charset charset) {
-            Preconditions.checkNotNull(string, "string cannot be null");
+        public Builder3<T> input(Charset charset, String... strings) {
+            Preconditions.checkNotNull(strings, "string cannot be null");
             Preconditions.checkNotNull(charset, "charset cannot be null");
-            return input(new ByteArrayInputStream(string.getBytes(charset)));
+            List<Supplier<InputStream>> list = Arrays //
+                    .asList(strings) //
+                    .stream() //
+                    .map(string -> new ByteArrayInputStream(string.getBytes(charset))) //
+                    .map(bis -> (Supplier<InputStream>)(() -> bis)) //
+                    .collect(Collectors.toList());
+            return inputStreams(list);
         }
 
-        public Builder3<T> input(String string) {
-            Preconditions.checkNotNull(string);
-            return input(string, StandardCharsets.UTF_8);
+        public Builder3<T> input(String... strings) {
+            Preconditions.checkNotNull(strings);
+            return input(StandardCharsets.UTF_8, strings);
         }
-
-        public Builder3<T> input(InputStream input) {
+        
+        public Builder3<T> input(InputStream... inputs) {
+            List<Supplier<InputStream>> list = Lists.newArrayList();
+            for (InputStream in:inputs) {
+                list.add(() -> new NonClosingInputStream(in));
+            }
+            return inputStreams(list);
+        }
+        
+        public Builder3<T> input(Supplier<? extends InputStream> input) {
             Preconditions.checkNotNull(input, "input cannot be null");
-            b.input = input;
-            return new Builder3<T>(b);
+            return inputStreams(Collections.singletonList(input));
+        }
+        
+        public Builder3<T> input(File... files) {
+            return input(Arrays.asList(files));
         }
 
-        public Builder3<T> input(File inputFile) {
-            Preconditions.checkNotNull(inputFile, "inputFile cannot be null");
-            b.inputFile = inputFile;
+        public Builder3<T> input(List<File> files) {
+            Preconditions.checkNotNull(files, "files cannot be null");
+            return inputStreams(files //
+                    .stream() //
+                    .map(file -> supplier(file)) //
+                    .collect(Collectors.toList()));
+        }
+        
+        public Builder3<T> inputStreams(List<? extends Supplier<? extends InputStream>> inputs) {
+            Preconditions.checkNotNull(inputs);
+            for (Supplier<? extends InputStream> input: inputs) {
+                b.inputs.add(input);
+            }
             return new Builder3<T>(b);
         }
-
+        
+        private Supplier<InputStream> supplier(File file) {
+            return () -> {
+                try {
+                    return openFile(file, b.bufferSize);
+                } catch (FileNotFoundException e) {
+                    throw new UncheckedIOException(e);
+                }
+            };
+        }
+        
     }
 
     public static final class Builder3<T> {
@@ -269,21 +309,7 @@ public final class Sorter<T> {
          * {@link UncheckedIOException}.
          */
         public void sort() {
-            try {
-                if (b.inputFile != null) {
-                    try (InputStream in = openFile(b.inputFile, b.bufferSize)) {
-                        sort(in);
-                    }
-                } else {
-                    sort(b.input);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-
-        private void sort(InputStream input) {
-            Sorter<T> sorter = new Sorter<T>(input, b.serializer, b.output, b.comparator,
+            Sorter<T> sorter = new Sorter<T>(b.inputs, b.serializer, b.output, b.comparator,
                     b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
                     b.transform, b.unique);
             try {
@@ -316,25 +342,29 @@ public final class Sorter<T> {
         List<File> files = new ArrayList<>();
         log("starting sort");
         log("unique = " + unique);
-        try (Reader<? extends T> reader = transform.apply(serializer.createReader(input))) {
-            int i = 0;
-            List<T> list = new ArrayList<>();
-            while (true) {
-                T t = reader.read();
-                if (t != null) {
-                    list.add(t);
-                    i++;
-                }
-                if (t == null || i == maxItemsPerPart) {
-                    i = 0;
-                    if (list.size() > 0) {
-                        File f = sortAndWriteToFile(list);
-                        files.add(f);
-                        list.clear();
+        
+        int i = 0;
+        List<T> list = new ArrayList<>();
+        for (Supplier<? extends InputStream> supplier: inputs) {
+            try (InputStream in = supplier.get();
+                    Reader<? extends T> reader = transform.apply(serializer.createReader(in))) {
+                while (true) {
+                    T t = reader.read();
+                    if (t != null) {
+                        list.add(t);
+                        i++;
                     }
-                }
-                if (t == null) {
-                    break;
+                    if (t == null || i == maxItemsPerPart) {
+                        i = 0;
+                        if (list.size() > 0) {
+                            File f = sortAndWriteToFile(list);
+                            files.add(f);
+                            list.clear();
+                        }
+                    }
+                    if (t == null) {
+                        break;
+                    }
                 }
             }
         }

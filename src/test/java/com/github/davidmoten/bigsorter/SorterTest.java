@@ -28,7 +28,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.csv.CSVFormat;
@@ -173,11 +176,32 @@ public class SorterTest {
         Sorter //
                 .serializerLinesUtf8() //
                 .comparator(Comparator.naturalOrder())
-                .input("c\ndef\nab\nc\nab\nc\ndef") //
+                .input("c\ndef\nab\nc\nab\nc\ndef\ndef") //
                 .output(OUTPUT) //
                 .unique() //
                 .maxItemsPerFile(2) //
-                .loggerStdOut() //
+                .sort();
+        assertEquals("ab\nc\ndef", readOutput());
+    }
+    
+    @Test
+    public void testSupplier() throws IOException {
+        Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder())
+                .input(() -> new ByteArrayInputStream("c\ndef\nab".getBytes(StandardCharsets.UTF_8))) //
+                .output(OUTPUT) //
+                .sort();
+        assertEquals("ab\nc\ndef", readOutput());
+    }
+    
+    @Test
+    public void testMultipleInputs() throws IOException {
+        Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder())
+                .input("c\ndef", "ab") //
+                .output(OUTPUT) //
                 .sort();
         assertEquals("ab\nc\ndef", readOutput());
     }
@@ -702,7 +726,9 @@ public class SorterTest {
 
     @Test(expected = UncheckedIOException.class)
     public void testMergeFileWhenDoesNotExist() {
-        Sorter<String> sorter = new Sorter<String>(new ByteArrayInputStream(new byte[0]), Serializer.linesUtf8(),
+        List<Supplier<? extends InputStream>> list = Collections.singletonList(() ->  
+                new ByteArrayInputStream(new byte[0]));
+        Sorter<String> sorter = new Sorter<String>(list, Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
                 }, 8192, new File(System.getProperty("java.io.tmpdir")), r -> r, false);
         sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));

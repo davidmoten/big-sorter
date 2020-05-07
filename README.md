@@ -30,12 +30,12 @@ Note that the merge step in the diagram above will happen repeatedly till one fi
 
 ## Algorithm
 
-A large file or `InputStream` of records is sorted by:
-* splitting the whole file into smaller segments according to `maxItemsPerFile`
+One or more large files or `InputStream`s of records are sorted to one output file by:
+* splitting the whole files into smaller segments according to `maxItemsPerFile`
 * each segment is sorted in memory and then written to a file
 * the segment files are then merged in groups according to `maxFilesPerMerge`
 * the merged files are repeatedly merged in groups until only one file remains (with all of the sorted entries)
-* Note that where possible files are merged with simililarly sized files to ensure that we don't start approaching insertion sort computational complexity (O(n<sup>2</sup>).
+* Note that where possible files are merged with similarly sized files to ensure that we don't start approaching insertion sort computational complexity (O(n<sup>2</sup>).
 * the merge step uses a Min Heap (`PriorityQueue`) for efficiency
 
 ## Getting started
@@ -74,12 +74,13 @@ To read records from files or InputStreams and to write records to files we need
 Make special note of the ability to do functional style transforms of the input data (`filter`, `map`).
 
 ```java
-File in = ...
+File in1 = ...
+File in2 = ...
 File out = ...
 Sorter
   // set both serializer and natural comparator
   .linesUtf8()
-  .input(in)
+  .input(in1, in2)
   .filter(line -> !line.isEmpty())
   .filter(line -> !line.startsWith("#"))
   .map(line -> line.toLowerCase())
