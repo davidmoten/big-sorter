@@ -1,5 +1,9 @@
 package com.github.davidmoten.bigsorter;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -16,6 +20,14 @@ public interface Serializer<T> {
     Reader<T> createReader(InputStream in);
 
     Writer<T> createWriter(OutputStream out);
+    
+    default Reader<T> createReader(File file) throws FileNotFoundException {
+        return createReader(new FileInputStream(file));
+    }
+    
+    default Writer<T> createWriter(File file) throws FileNotFoundException {
+        return createWriter(new FileOutputStream(file));
+    }
 
     public static Serializer<String> linesUtf8() {
         return linesUtf8(LineDelimiter.LINE_FEED);

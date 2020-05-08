@@ -60,5 +60,5 @@ public class LineSerializerTest {
         }
         assertTrue(out.flushed);
     }
-
+    
 }

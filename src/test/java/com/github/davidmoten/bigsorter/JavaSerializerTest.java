@@ -27,6 +27,5 @@ public class JavaSerializerTest {
         }
         assertTrue(out.flushed);
     }
-
-
+    
 }
