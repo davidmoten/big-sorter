@@ -36,7 +36,6 @@ import com.github.davidmoten.guavamini.Lists;
 import com.github.davidmoten.guavamini.Preconditions;
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
-//NotThreadSafe
 public final class Sorter<T> {
 
     private final List<Supplier<? extends InputStream>> inputs;
@@ -344,7 +343,7 @@ public final class Sorter<T> {
         log("unique = " + unique);
         
         int i = 0;
-        List<T> list = new ArrayList<>();
+        ArrayList<T> list = new ArrayList<>();
         for (Supplier<? extends InputStream> supplier: inputs) {
             try (InputStream in = supplier.get();
                     Reader<? extends T> reader = transform.apply(serializer.createReader(in))) {
@@ -466,10 +465,10 @@ public final class Sorter<T> {
         }
     }
 
-    private File sortAndWriteToFile(List<T> list) throws FileNotFoundException, IOException {
+    private File sortAndWriteToFile(ArrayList<T> list) throws FileNotFoundException, IOException {
         File file = nextTempFile();
         long t = System.currentTimeMillis();
-        Collections.sort(list, comparator);
+        list.sort(comparator);
         writeToFile(list, file);
         DecimalFormat df = new DecimalFormat("0.000");
         count += list.size();
