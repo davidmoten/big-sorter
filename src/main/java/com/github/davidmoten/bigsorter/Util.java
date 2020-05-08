@@ -24,7 +24,7 @@ public final class Util {
      *            comparator for item
      * @param writer
      *            writer to which common entries are written to
-     * @throws IOException
+     * @throws IOException I/O exception
      */
     public static <T> void findSame(Reader<? extends T> readerA, Reader<? extends T> readerB,
             Comparator<? super T> comparator, Writer<T> writer) throws IOException {
@@ -55,13 +55,13 @@ public final class Util {
      *            item type
      * @param readerA
      *            reader of first file
-     * @param readerA
+     * @param readerB
      *            reader of second file
      * @param comparator
      *            comparator for item
      * @param writer
      *            writer to which common entries are written to
-     * @throws IOException
+     * @throws IOException I/O exception
      */
     public static <T> void findDifferent(Reader<? extends T> readerA, Reader<? extends T> readerB,
             Comparator<? super T> comparator, Writer<T> writer) throws IOException {
@@ -100,13 +100,13 @@ public final class Util {
      *            item type
      * @param readerA
      *            reader of first file
-     * @param readerA
+     * @param readerB
      *            reader of second file
      * @param comparator
      *            comparator for item
      * @param writer
      *            writer to which common entries are written to
-     * @throws IOException
+     * @throws IOException I/O exception
      */
     public static <T> void findComplement(Reader<? extends T> readerA, Reader<? extends T> readerB,
             Comparator<? super T> comparator, Writer<T> writer) throws IOException {
