@@ -36,6 +36,10 @@ import com.github.davidmoten.guavamini.Lists;
 import com.github.davidmoten.guavamini.Preconditions;
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 
+// NotThreadSafe
+// The class is not considered thread safe because calling the sort() method on the same Sorter object simultaneously from 
+// different threads could break things. Admittedly that would be a pretty strange thing to do! In short, create a new Sorter 
+// and sort() in one thread, don't seek to reuse the same Sorter object. 
 public final class Sorter<T> {
 
     private final List<Supplier<? extends InputStream>> inputs;
