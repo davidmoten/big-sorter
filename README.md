@@ -279,6 +279,23 @@ Sorter
   .sort();
 ```  
 
+## Returning the result as a Stream<T>
+
+You might want to deal with the results of the sort immediately and be prepared to throw away the output file once read by a stream:
+
+```java
+try (Stream<String> stream = Sorter
+  .linesUtf8()
+  .input(in)
+  .outputAsStream()
+  .sort()) {
+    stream.forEach(System.out::println);
+}
+``` 
+The interaction is a little bit clumsy because you need to the stream to be auto-closed by the try-catch-with-resources block. The close action of the stream deletes the file used as output. If you don't close the stream then you will accumulate final output files in the temp directory and possibly run out of disk.
+
+The fact that java.util.Stream has poor support for closing resources tempts the author to switch to a more appropriate functional library like [kool](https://github.com/davidmoten/kool). We'll see.
+
 ## Logging
 If you want some insight into the progress of the sort then set a logger in the builder:
 
