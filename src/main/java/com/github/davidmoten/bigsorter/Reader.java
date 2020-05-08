@@ -109,8 +109,7 @@ public interface Reader<T> extends Closeable {
 
     default Reader<T> transform(
             Function<? super Stream<T>, ? extends Stream<? extends T>> function) {
-        Reader<T> r = Reader.this;
-        Stream<? extends T> s = function.apply(r.toStream());
+        Stream<? extends T> s = function.apply(Reader.this.toStream());
         return new Reader<T>() {
 
             Iterator<? extends T> it = s.iterator();
@@ -126,7 +125,7 @@ public interface Reader<T> extends Closeable {
 
             @Override
             public void close() throws IOException {
-                r.close();
+                s.close();
             }
 
         };
@@ -170,7 +169,13 @@ public interface Reader<T> extends Closeable {
 
     default Stream<T> toStream() {
         return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(toIterator(), Spliterator.ORDERED), false);
+                Spliterators.spliteratorUnknownSize(toIterator(), Spliterator.ORDERED), false).onClose(() -> {
+                    try {
+                        Reader.this.close();
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
     }
 
 }

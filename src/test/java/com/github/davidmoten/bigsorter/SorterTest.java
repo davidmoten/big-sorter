@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -204,6 +205,18 @@ public class SorterTest {
                 .output(OUTPUT) //
                 .sort();
         assertEquals("ab\nc\ndef", readOutput());
+    }
+    
+    @Test
+    public void testReturnAsStream() {
+        try (Stream<String> stream = Sorter //
+                .serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder()).input("c\ndef", "ab") //
+                .outputAsStream() //
+                .sort()) {
+                String s = stream.collect(Collectors.joining("\n"));
+                assertEquals("ab\nc\ndef", s);
+        }
     }
 
     @Test

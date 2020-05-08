@@ -241,49 +241,52 @@ public final class Sorter<T> {
             b.output = output;
             return new Builder4<T>(b);
         }
+        
+        public Builder5<T> outputAsStream() {
+            return new Builder5<T>(b);
+        }
 
     }
+    
+    public static class Builder4Base<T, S extends Builder4Base<T, S>> {
+        protected final Builder<T> b;
 
-    public static final class Builder4<T> {
-        private final Builder<T> b;
-
-        Builder4(Builder<T> b) {
+        Builder4Base(Builder<T> b) {
             this.b = b;
         }
 
-        public Builder4<T> maxFilesPerMerge(int value) {
+        @SuppressWarnings("unchecked")
+        public S maxFilesPerMerge(int value) {
             Preconditions.checkArgument(value > 1, "maxFilesPerMerge must be greater than 1");
             b.maxFilesPerMerge = value;
-            return this;
+            return (S) this;
         }
 
-        public Builder4<T> maxItemsPerFile(int value) {
+        @SuppressWarnings("unchecked")
+        public S maxItemsPerFile(int value) {
             Preconditions.checkArgument(value > 0, "maxItemsPerFile must be greater than 0");
             b.maxItemsPerFile = value;
-            return this;
+            return (S) this;
         }
         
-        public Builder4<T> unique(boolean value) {
+        @SuppressWarnings("unchecked")
+        public S unique(boolean value) {
             b.unique = value;
-            return this;
+            return (S) this;
         }
         
-        public Builder4<T> unique() {
+        public S unique() {
             return unique(true);
         }
 
-        public Builder4<T> logger(Consumer<? super String> logger) {
+        @SuppressWarnings("unchecked")
+        public S logger(Consumer<? super String> logger) {
             Preconditions.checkNotNull(logger, "logger cannot be null");
             b.logger = logger;
-            return this;
+            return (S) this;
         }
 
-        // public Builder4<T> async() {
-        // b.executor = Executors.newSingleThreadExecutor();
-        // return this;
-        // }
-
-        public Builder4<T> loggerStdOut() {
+        public S loggerStdOut() {
             return logger(new Consumer<String>() {
 
                 @Override
@@ -294,18 +297,29 @@ public final class Sorter<T> {
             });
         }
 
-        public Builder4<T> bufferSize(int bufferSize) {
+        @SuppressWarnings("unchecked")
+        public S bufferSize(int bufferSize) {
             Preconditions.checkArgument(bufferSize > 0, "bufferSize must be greater than 0");
             b.bufferSize = bufferSize;
-            return this;
+            return (S) this;
         }
 
-        public Builder4<T> tempDirectory(File directory) {
+        @SuppressWarnings("unchecked")
+        public S tempDirectory(File directory) {
             Preconditions.checkNotNull(directory, "tempDirectory cannot be null");
             b.tempDirectory = directory;
-            return this;
+            return (S) this;
         }
         
+    }
+
+
+    public static final class Builder4<T> extends Builder4Base<T, Builder4<T>> {
+
+        Builder4(Builder<T> b) {
+            super(b);
+        }
+
         /**
          * Sorts the input and writes the result to the given output file. If an
          * {@link IOException} occurs then it is thrown wrapped in
@@ -318,12 +332,53 @@ public final class Sorter<T> {
             try {
                 sorter.sort();
             } catch (IOException e) {
+                b.output.delete();
                 throw new UncheckedIOException(e);
             }
         }
 
     }
+    
+    public static final class Builder5<T> {
 
+        private final Builder<T> b;
+
+        Builder5(Builder<T> b) {
+            this.b = b;
+        }
+
+        /**
+         * Sorts the input and writes the result to the output file. The items in the
+         * output file are returned as a Stream. The Stream must be closed (it is
+         * AutoCloseable) to avoid consuming unnecessary disk space with many calls.
+         * When the Stream is closed the output file is deleted. When a
+         * {@link IOException} occurs it is thrown wrapped in a
+         * {@link UncheckedIOException}.
+         * 
+         * <p>
+         * Note that a terminal operation (like {@code .count()} for example) does NOT
+         * close the Stream. You should assign the Stream to a variable in a
+         * try-catch-with-resources block to ensure the output file is deleted.
+         */
+        public Stream<T> sort() {
+            try {
+                b.output = nextTempFile(b.tempDirectory);
+                Sorter<T> sorter = new Sorter<T>(b.inputs, b.serializer, b.output, b.comparator,
+                        b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
+                        b.transform, b.unique);
+                sorter.sort();
+                return b.serializer //
+                        .createReader(b.output) //
+                        .toStream() //
+                        .onClose(() -> b.output.delete());
+            } catch (IOException e) {
+                b.output.delete();
+                throw new UncheckedIOException(e);
+            }
+        }
+
+    }
+    
     static InputStream openFile(File file, int bufferSize) throws FileNotFoundException {
         return new BufferedInputStream(new FileInputStream(file), bufferSize);
     }
@@ -498,6 +553,10 @@ public final class Sorter<T> {
     }
 
     private File nextTempFile() throws IOException {
+        return nextTempFile(tempDirectory);
+    }
+    
+    private static File nextTempFile(File tempDirectory) throws IOException {
         return File.createTempFile("big-sorter", "", tempDirectory);
     }
 
