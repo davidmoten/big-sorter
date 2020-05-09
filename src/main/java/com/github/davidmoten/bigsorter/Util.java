@@ -1,5 +1,6 @@
 package com.github.davidmoten.bigsorter;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 
@@ -43,6 +44,15 @@ public final class Util {
             } else {
                 y = readerB.read();
             }
+        }
+    }
+    
+    public static <T> void findSame(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
+        try (
+          Reader<T> readerA = serializer.createReader(a); 
+          Reader<T> readerB = serializer.createReader(b);
+          Writer<T> writer = serializer.createWriter(output)) {
+            Util.findSame(readerA, readerB, comparator, writer);
         }
     }
 
@@ -91,6 +101,16 @@ public final class Util {
         }
     }
 
+    public static <T> void findDifferent(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
+        try (
+          Reader<T> readerA = serializer.createReader(a); 
+          Reader<T> readerB = serializer.createReader(b);
+          Writer<T> writer = serializer.createWriter(output)) {
+            Util.findDifferent(readerA, readerB, comparator, writer);
+        }
+    }
+
+    
     /**
      * Writes different entries (only those entries that are only present in one
      * input reader) from both readers to the writer in sorted order.
@@ -130,5 +150,13 @@ public final class Util {
             x = readerA.read();
         }
     }
-
+    
+    public static <T> void findComplement(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
+        try (
+          Reader<T> readerA = serializer.createReader(a); 
+          Reader<T> readerB = serializer.createReader(b);
+          Writer<T> writer = serializer.createWriter(output)) {
+            Util.findComplement(readerA, readerB, comparator, writer);
+        }
+    }
 }
