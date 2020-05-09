@@ -327,14 +327,7 @@ File a = ...
 File b = ...
 // result of the operation
 File out = ...
-Comparator<String> comparator = Comparator.naturalOrder();
-Serializer<String> ser = Serializer.linesUtf8();
-try (
-  Reader<String> readerA = ser.createReader(a); 
-  Reader<String> readerB = ser.createReader(b);
-  Writer<String> writer = ser.createWriter(out)) {
-    Util.findSame(readerA, readerB, comparator, writer);
-}
+Util.findSame(a, b, Serializer.linesUtf8(), Comparator.naturalOrder(), out);
 ```
 
 ## Logging
