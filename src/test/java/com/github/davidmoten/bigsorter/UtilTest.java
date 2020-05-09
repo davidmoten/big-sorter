@@ -15,7 +15,7 @@ import org.junit.Test;
 import com.github.davidmoten.junit.Asserts;
 
 public class UtilTest {
-    
+
     @Test
     public void isUtilityClass() {
         Asserts.assertIsUtilityClass(Util.class);
@@ -30,22 +30,23 @@ public class UtilTest {
         Comparator<String> comparator = Comparator.naturalOrder();
         Serializer<String> ser = Serializer.linesUtf8();
         File c = new File("target/c");
-        try (Reader<String> readerA = ser.createReader(a); Reader<String> readerB = ser.createReader(b);) {
-            try (Writer<String> writerC = ser.createWriter(c)) {
-                Util.findSame(readerA, readerB, comparator, writerC);
-            }
+        try (Reader<String> readerA = ser.createReader(a); //
+                Reader<String> readerB = ser.createReader(b); //
+                Writer<String> writerC = ser.createWriter(c)) {
+            Util.findSame(readerA, readerB, comparator, writerC);
         }
         assertEquals("12\n34\n", (new String(Files.readAllBytes(c.toPath()))));
-        
+
         // assert same if A and B swapped
-        try (Reader<String> readerA = ser.createReader(a); Reader<String> readerB = ser.createReader(b);) {
-            try (Writer<String> writerC = ser.createWriter(c)) {
-                Util.findSame(readerB, readerA, comparator, writerC);
-            }
+        try (Reader<String> readerA = ser.createReader(a);
+                Reader<String> readerB = ser.createReader(b);
+                Writer<String> writerC = ser.createWriter(c)) {
+            Util.findSame(readerB, readerA, comparator, writerC);
         }
+
         assertEquals("12\n34\n", (new String(Files.readAllBytes(c.toPath()))));
     }
-    
+
     @Test
     public void testDifferentLinesTwoSortedFiles() throws IOException {
         File a = new File("target/a");
@@ -55,22 +56,22 @@ public class UtilTest {
         Comparator<String> comparator = Comparator.naturalOrder();
         Serializer<String> ser = Serializer.linesUtf8();
         File c = new File("target/c");
-        try (Reader<String> readerA = ser.createReader(a); Reader<String> readerB = ser.createReader(b);) {
-            try (Writer<String> writerC = ser.createWriter(c)) {
-                Util.findDifferent(readerA, readerB, comparator, writerC);
-            }
+        try (Reader<String> readerA = ser.createReader(a);
+                Reader<String> readerB = ser.createReader(b);
+                Writer<String> writerC = ser.createWriter(c)) {
+            Util.findDifferent(readerA, readerB, comparator, writerC);
         }
         assertEquals("22\n23\n40\n", (new String(Files.readAllBytes(c.toPath()))));
-        
+
         // swap files
-        try (Reader<String> readerA = ser.createReader(a); Reader<String> readerB = ser.createReader(b);) {
-            try (Writer<String> writerC = ser.createWriter(c)) {
-                Util.findDifferent(readerB, readerA, comparator, writerC);
-            }
+        try (Reader<String> readerA = ser.createReader(a);
+                Reader<String> readerB = ser.createReader(b);
+                Writer<String> writerC = ser.createWriter(c)) {
+            Util.findDifferent(readerB, readerA, comparator, writerC);
         }
         assertEquals("22\n23\n40\n", (new String(Files.readAllBytes(c.toPath()))));
     }
-    
+
     @Test
     public void testComplementLinesTwoSortedFiles() throws IOException {
         File a = new File("target/a");
@@ -80,14 +81,14 @@ public class UtilTest {
         Comparator<String> comparator = Comparator.naturalOrder();
         Serializer<String> ser = Serializer.linesUtf8();
         File c = new File("target/c");
-        try (Reader<String> readerA = ser.createReader(a); Reader<String> readerB = ser.createReader(b);) {
-            try (Writer<String> writerC = ser.createWriter(c)) {
-                Util.findComplement(readerA, readerB, comparator, writerC);
-            }
+        try (Reader<String> readerA = ser.createReader(a);
+                Reader<String> readerB = ser.createReader(b);
+                Writer<String> writerC = ser.createWriter(c)) {
+            Util.findComplement(readerA, readerB, comparator, writerC);
         }
         assertEquals("23\n", (new String(Files.readAllBytes(c.toPath()))));
     }
-    
+
     @Test
     public void testComplementLinesTwoSortedFilesSwapped() throws IOException {
         File a = new File("target/a");
@@ -97,14 +98,14 @@ public class UtilTest {
         Comparator<String> comparator = Comparator.naturalOrder();
         Serializer<String> ser = Serializer.linesUtf8();
         File c = new File("target/c");
-        try (Reader<String> readerA = ser.createReader(a); Reader<String> readerB = ser.createReader(b);) {
-            try (Writer<String> writerC = ser.createWriter(c)) {
-                Util.findComplement(readerB, readerA, comparator, writerC);
-            }
+        try (Reader<String> readerA = ser.createReader(a);
+                Reader<String> readerB = ser.createReader(b);
+                Writer<String> writerC = ser.createWriter(c)) {
+            Util.findComplement(readerB, readerA, comparator, writerC);
         }
         assertEquals("22\n40\n", (new String(Files.readAllBytes(c.toPath()))));
     }
-    
+
     private static void write(File file, String text) throws IOException {
         try (OutputStream out = new FileOutputStream(file)) {
             out.write(text.getBytes(StandardCharsets.UTF_8));
