@@ -39,7 +39,7 @@ public interface Reader<T> extends Closeable, Iterable<T> {
     }
 
     default Reader<T> filter(Predicate<? super T> predicate) {
-        Reader<T> r = Reader.this;
+        Reader<T> r = this;
         return new Reader<T>() {
 
             @Override
@@ -59,7 +59,7 @@ public interface Reader<T> extends Closeable, Iterable<T> {
     }
 
     default Reader<T> map(Function<? super T, ? extends T> mapper) {
-        Reader<T> r = Reader.this;
+        Reader<T> r = this;
         return new Reader<T>() {
 
             @Override
@@ -80,7 +80,7 @@ public interface Reader<T> extends Closeable, Iterable<T> {
     }
 
     default Reader<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
-        Reader<T> r = Reader.this;
+        Reader<T> r = this;
         return new Reader<T>() {
 
             List<? extends T> list;
@@ -109,7 +109,7 @@ public interface Reader<T> extends Closeable, Iterable<T> {
 
     default Reader<T> transform(
             Function<? super Stream<T>, ? extends Stream<? extends T>> function) {
-        Stream<? extends T> s = function.apply(Reader.this.stream());
+        Stream<? extends T> s = function.apply(stream());
         return new Reader<T>() {
 
             Iterator<? extends T> it = s.iterator();
