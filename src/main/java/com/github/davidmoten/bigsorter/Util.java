@@ -47,6 +47,24 @@ public final class Util {
         }
     }
     
+    /**
+     * Writes common entries from both files to the output file in sorted
+     * order.{@code a} and {@code b} must already be sorted.
+     * 
+     * @param <T>
+     *            item type
+     * @param a
+     *            first file
+     * @param b
+     *            second file
+     * @param serializer
+     *            item serializer
+     * @param comparator
+     *            comparator for item
+     * @param output
+     *            file to which common entries are written to
+     * @throws IOException I/O exception
+     */
     public static <T> void findSame(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
         try (
           Reader<T> readerA = serializer.createReader(a); 
@@ -101,6 +119,25 @@ public final class Util {
         }
     }
 
+    /**
+     * Writes different entries (only those entries that are only present in one
+     * file) from both files to the output file in sorted order.
+     * {@code a} and {@code b} must already be sorted.
+     * 
+     * @param <T>
+     *            item type
+     * @param a
+     *            first file
+     * @param b
+     *            second file
+     * @param serializer
+     *            item serializer
+     * @param comparator
+     *            comparator for item
+     * @param output
+     *            file to which common entries are written to
+     * @throws IOException I/O exception
+     */
     public static <T> void findDifferent(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
         try (
           Reader<T> readerA = serializer.createReader(a); 
@@ -112,9 +149,8 @@ public final class Util {
 
     
     /**
-     * Writes different entries (only those entries that are only present in one
-     * input reader) from both readers to the writer in sorted order.
-     * {@code readerA} and {@code readerB} must be reading already sorted data.
+     * Writes to the output file only those entries from the first reader that are not present in the 
+     * second reader. {@code readerA} and {@code readerB} must be reading already sorted data.
      * 
      * @param <T>
      *            item type
@@ -151,6 +187,24 @@ public final class Util {
         }
     }
     
+    /**
+     * Writes only those entries that are in the first file but not in the second file 
+     * to the output file in sorted order. {@code a} and {@code b} must already be sorted.
+     * 
+     * @param <T>
+     *            item type
+     * @param a
+     *            first file
+     * @param b
+     *            second file
+     * @param serializer
+     *            item serializer
+     * @param comparator
+     *            comparator for item
+     * @param output
+     *            file to which common entries are written to
+     * @throws IOException I/O exception
+     */
     public static <T> void findComplement(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
         try (
           Reader<T> readerA = serializer.createReader(a); 
