@@ -340,6 +340,34 @@ You can use the `.loggerStdOut()` method in the builder and you will get timesta
 2019-05-25 09:13:25.8+1000 merging 10 files
 2019-05-25 09:13:36.8+1000 sort of 1000000 records completed in 37.456s
 ```
+
+## Comparing sorted files
+Once you've got multiple sorted files you may want to perform some comparisons. Common comparisons include:
+
+* find common records (use `Util.findSame`)
+* find different records (use `Util.findDifferent`)
+* find records that are not present in the other file (use `Util.findComplement`)
+
+Here's an example of using `Util.findSame`:
+
+```java
+// already sorted
+File a = ...
+// already sorted
+File b = ...
+// result of the operation
+File out = ...
+Comparator<String> comparator = Comparator.naturalOrder();
+Serializer<String> ser = Serializer.linesUtf8();
+try (
+  Reader<String> readerA = ser.createReader(a); 
+  Reader<String> readerB = ser.createReader(b);
+  Writer<String> writer = ser.createWriter(out)) {
+    Util.findSame(readerA, readerB, comparator, writer);
+}
+```
+
+
 ## Memory usage
 Memory usage is directly linked to the value of the `maxItemsPerFile` parameter which you can set in the builder. Its default is 100000. If too much memory is being used reduce that number and test.
 
