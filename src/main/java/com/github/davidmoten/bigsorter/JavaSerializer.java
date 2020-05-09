@@ -14,7 +14,7 @@ final class JavaSerializer<T extends Serializable> implements Serializer<T> {
 	private static final JavaSerializer<Serializable> INSTANCE = new JavaSerializer<>();
 	
 	@SuppressWarnings("unchecked")
-	static final <T extends Serializable> JavaSerializer<T> instance() {
+	static <T extends Serializable> JavaSerializer<T> instance() {
 		return (JavaSerializer<T>) INSTANCE;
 	}
 
