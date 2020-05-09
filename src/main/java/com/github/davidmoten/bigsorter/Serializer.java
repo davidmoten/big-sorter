@@ -29,11 +29,11 @@ public interface Serializer<T> {
         return createWriter(new FileOutputStream(file));
     }
 
-    public static Serializer<String> linesUtf8() {
+    static Serializer<String> linesUtf8() {
         return linesUtf8(LineDelimiter.LINE_FEED);
     }
 
-    public static Serializer<String> linesUtf8(LineDelimiter delimiter) {
+    static Serializer<String> linesUtf8(LineDelimiter delimiter) {
         Preconditions.checkNotNull(delimiter);
         if (delimiter == LineDelimiter.LINE_FEED) {
             return LinesSerializer.LINES_UTF8_LF;
@@ -42,33 +42,33 @@ public interface Serializer<T> {
         }
     }
 
-    public static Serializer<String> lines(Charset charset) {
+    static Serializer<String> lines(Charset charset) {
         Preconditions.checkNotNull(charset);
         return new LinesSerializer(charset, LineDelimiter.LINE_FEED);
     }
 
-    public static Serializer<String> lines(Charset charset, LineDelimiter delimiter) {
+    static Serializer<String> lines(Charset charset, LineDelimiter delimiter) {
         Preconditions.checkNotNull(charset);
         Preconditions.checkNotNull(delimiter);
         return new LinesSerializer(charset, delimiter);
     }
 
-    public static <T extends Serializable> Serializer<T> java() {
+    static <T extends Serializable> Serializer<T> java() {
         return JavaSerializer.instance();
     }
 
-    public static Serializer<byte[]> fixedSizeRecord(int size) {
+    static Serializer<byte[]> fixedSizeRecord(int size) {
         Preconditions.checkArgument(size > 0);
         return new FixedSizeRecordSerializer(size);
     }
 
-    public static Serializer<CSVRecord> csv(CSVFormat format, Charset charset) {
+    static Serializer<CSVRecord> csv(CSVFormat format, Charset charset) {
         Preconditions.checkNotNull(format, "format cannot be null");
         Preconditions.checkNotNull(charset, "charset cannot be null");
         return new CsvSerializer(format, charset);
     }
     
-    public static Serializer<ObjectNode> jsonArray() {
+    static Serializer<ObjectNode> jsonArray() {
         return JsonArraySerializer.INSTANCE;
     }
     
