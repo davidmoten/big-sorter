@@ -278,6 +278,21 @@ Sorter
   .output(out)
   .sort();
 ```  
+## How to read the output file
+Having sorted to a file `f`, you can read from that file like so (`Reader` is `Iterable`):
+
+```java
+Reader<T> reader = serializer.createReader(f);
+for (T t: reader) {
+    System.out.println(t);
+}
+```
+An example with String lines:
+
+```java
+Reader<String> reader = Serializer.linesUtf8().createReader(f);
+reader.forEach(System.out::println);
+```
 
 ## Returning the result as a Stream<T>
 
