@@ -13,7 +13,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public interface Reader<T> extends Closeable {
+public interface Reader<T> extends Closeable, Iterable<T> {
 
     /**
      * Returns the next read value. If no more values returns null.
@@ -109,7 +109,7 @@ public interface Reader<T> extends Closeable {
 
     default Reader<T> transform(
             Function<? super Stream<T>, ? extends Stream<? extends T>> function) {
-        Stream<? extends T> s = function.apply(Reader.this.toStream());
+        Stream<? extends T> s = function.apply(Reader.this.stream());
         return new Reader<T>() {
 
             Iterator<? extends T> it = s.iterator();
@@ -131,7 +131,7 @@ public interface Reader<T> extends Closeable {
         };
     }
 
-    default Iterator<T> toIterator() {
+    default Iterator<T> iterator() {
         return new Iterator<T>() {
 
             T t;
@@ -167,9 +167,9 @@ public interface Reader<T> extends Closeable {
         };
     }
 
-    default Stream<T> toStream() {
+    default Stream<T> stream() {
         return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(toIterator(), Spliterator.ORDERED), false).onClose(() -> {
+                Spliterators.spliteratorUnknownSize(iterator(), Spliterator.ORDERED), false).onClose(() -> {
                     try {
                         Reader.this.close();
                     } catch (IOException e) {

@@ -38,17 +38,17 @@ public class ReaderTest {
 
     @Test
     public void testToIteratorEmpty() {
-        assertFalse(EMPTY_READER.toIterator().hasNext());
+        assertFalse(EMPTY_READER.iterator().hasNext());
     }
 
     @Test(expected = NoSuchElementException.class)
     public void testToIteratorEmptyNextThrows() {
-        EMPTY_READER.toIterator().next();
+        EMPTY_READER.iterator().next();
     }
     
     @Test(expected=UncheckedIOException.class)
     public void testToIteratorWhenReadThrows() {
-        THROWS.toIterator().next();
+        THROWS.iterator().next();
     }
 
 }

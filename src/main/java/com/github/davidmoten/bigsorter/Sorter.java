@@ -369,7 +369,7 @@ public final class Sorter<T> {
                 sorter.sort();
                 return b.serializer //
                         .createReader(b.output) //
-                        .toStream() //
+                        .stream() //
                         .onClose(() -> b.output.delete());
             } catch (IOException e) {
                 b.output.delete();
