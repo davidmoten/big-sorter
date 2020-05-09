@@ -359,6 +359,8 @@ public final class Sorter<T> {
          * Note that a terminal operation (like {@code .count()} for example) does NOT
          * close the Stream. You should assign the Stream to a variable in a
          * try-catch-with-resources block to ensure the output file is deleted.
+         * 
+         * @return stream that on close deletes the output file of the sort
          */
         public Stream<T> sort() {
             try {
