@@ -30,20 +30,11 @@ public class UtilTest {
         Comparator<String> comparator = Comparator.naturalOrder();
         Serializer<String> ser = Serializer.linesUtf8();
         File c = new File("target/c");
-        try (Reader<String> readerA = ser.createReader(a); //
-                Reader<String> readerB = ser.createReader(b); //
-                Writer<String> writerC = ser.createWriter(c)) {
-            Util.findSame(readerA, readerB, comparator, writerC);
-        }
+        Util.findSame(a, b, ser, comparator, c);
         assertEquals("12\n34\n", (new String(Files.readAllBytes(c.toPath()))));
 
         // assert same if A and B swapped
-        try (Reader<String> readerA = ser.createReader(a);
-                Reader<String> readerB = ser.createReader(b);
-                Writer<String> writerC = ser.createWriter(c)) {
-            Util.findSame(readerB, readerA, comparator, writerC);
-        }
-
+        Util.findSame(b, a, ser, comparator, c);
         assertEquals("12\n34\n", (new String(Files.readAllBytes(c.toPath()))));
     }
 
@@ -56,19 +47,11 @@ public class UtilTest {
         Comparator<String> comparator = Comparator.naturalOrder();
         Serializer<String> ser = Serializer.linesUtf8();
         File c = new File("target/c");
-        try (Reader<String> readerA = ser.createReader(a);
-                Reader<String> readerB = ser.createReader(b);
-                Writer<String> writerC = ser.createWriter(c)) {
-            Util.findDifferent(readerA, readerB, comparator, writerC);
-        }
+        Util.findDifferent(a, b, ser, comparator, c);
         assertEquals("22\n23\n40\n", (new String(Files.readAllBytes(c.toPath()))));
 
         // swap files
-        try (Reader<String> readerA = ser.createReader(a);
-                Reader<String> readerB = ser.createReader(b);
-                Writer<String> writerC = ser.createWriter(c)) {
-            Util.findDifferent(readerB, readerA, comparator, writerC);
-        }
+        Util.findDifferent(b, a, ser, comparator, c);
         assertEquals("22\n23\n40\n", (new String(Files.readAllBytes(c.toPath()))));
     }
 
@@ -78,14 +61,8 @@ public class UtilTest {
         write(a, "12\n23\n34");
         File b = new File("target/b");
         write(b, "12\n22\n34\n40");
-        Comparator<String> comparator = Comparator.naturalOrder();
-        Serializer<String> ser = Serializer.linesUtf8();
         File c = new File("target/c");
-        try (Reader<String> readerA = ser.createReader(a);
-                Reader<String> readerB = ser.createReader(b);
-                Writer<String> writerC = ser.createWriter(c)) {
-            Util.findComplement(readerA, readerB, comparator, writerC);
-        }
+        Util.findComplement(a, b, Serializer.linesUtf8(), Comparator.naturalOrder(), c);
         assertEquals("23\n", (new String(Files.readAllBytes(c.toPath()))));
     }
 
@@ -98,11 +75,7 @@ public class UtilTest {
         Comparator<String> comparator = Comparator.naturalOrder();
         Serializer<String> ser = Serializer.linesUtf8();
         File c = new File("target/c");
-        try (Reader<String> readerA = ser.createReader(a);
-                Reader<String> readerB = ser.createReader(b);
-                Writer<String> writerC = ser.createWriter(c)) {
-            Util.findComplement(readerB, readerA, comparator, writerC);
-        }
+        Util.findComplement(b, a, ser, comparator, c);
         assertEquals("22\n40\n", (new String(Files.readAllBytes(c.toPath()))));
     }
 
