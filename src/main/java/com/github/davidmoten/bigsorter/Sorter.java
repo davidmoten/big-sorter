@@ -373,10 +373,10 @@ public final class Sorter<T> {
                         .createReader(b.output) //
                         .stream() //
                         .onClose(() -> b.output.delete());
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 b.output.delete();
-                throw new UncheckedIOException(e);
-            }
+                throw Util.toRuntimeException(e);
+            } 
         }
 
     }

@@ -344,4 +344,14 @@ public final class Util {
             throw new UncheckedIOException(e);
         }
     }
+
+    static RuntimeException toRuntimeException(Throwable e) {
+        if (e instanceof IOException) {
+            return new UncheckedIOException((IOException) e);
+        } else if (e instanceof RuntimeException) {
+            return (RuntimeException) e;
+        } else {
+            return new RuntimeException(e);
+        }
+    }
 }

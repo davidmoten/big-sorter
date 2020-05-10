@@ -747,6 +747,16 @@ public class SorterTest {
         sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
     }
 
+    @Test(expected=RuntimeException.class)
+    public void testSortAsStreamThrows() {
+        Sorter.linesUtf8() //
+                .input(() -> {
+                    throw new RuntimeException();
+                }) //
+                .outputAsStream() //
+                .sort();
+    }
+    
     static void printOutput() throws IOException {
         String s = new String(Files.readAllBytes(OUTPUT.toPath()));
         System.out.println("output=\n" + s);

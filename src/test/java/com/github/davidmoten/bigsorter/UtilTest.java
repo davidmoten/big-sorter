@@ -106,7 +106,7 @@ public class UtilTest {
         File a = write("target/a", "1\n2\n3\n4\n5");
         Util.splitByCount(a, Serializer.linesUtf8(), 0);
     }
-    
+
     @Test
     public void testSplitBySize() throws IOException {
         File a = write("target/a", "1\n2\n3\n4\n5");
@@ -116,7 +116,7 @@ public class UtilTest {
         assertEquals("3\n4\n", text(files.get(1)));
         assertEquals("5\n", text(files.get(2)));
     }
-    
+
     @Test
     public void testSplitBySizeSlightlyBigger() throws IOException {
         File a = write("target/a", "1\n2\n3\n4\n5");
@@ -134,7 +134,7 @@ public class UtilTest {
         assertEquals(1, files.size());
         assertEquals("1\n2\n3\n4\n5\n", text(files.get(0)));
     }
-    
+
     @Test
     public void testClose() {
         AtomicBoolean closed = new AtomicBoolean();
@@ -143,11 +143,12 @@ public class UtilTest {
             @Override
             public void close() throws IOException {
                 closed.set(true);
-            }};
+            }
+        };
         Util.close(c);
         assertTrue(closed.get());
     }
-    
+
     @Test(expected = UncheckedIOException.class)
     public void testCloseThrowsUncheckedIOException() {
         Closeable c = new Closeable() {
@@ -159,7 +160,28 @@ public class UtilTest {
         };
         Util.close(c);
     }
+
+    @Test
+    public void testToRuntimeException() {
+        RuntimeException e = new RuntimeException();
+        assertTrue(e == Util.toRuntimeException(e));
+    }
+
+    @Test
+    public void testToRuntimeExceptionWithIOException() {
+        IOException e = new IOException();
+        RuntimeException e2 = Util.toRuntimeException(e);
+        assertTrue(e2 instanceof UncheckedIOException);
+        assertTrue(e == e2.getCause());
+    }
     
+    @Test
+    public void testToRuntimeExceptionWithNonIOCheckedException() {
+        Exception e = new Exception();
+        RuntimeException e2 = Util.toRuntimeException(e);
+        assertTrue(e == e2.getCause());
+    }
+
     private static String text(File f) {
         try {
             return new String(Files.readAllBytes(f.toPath()));
