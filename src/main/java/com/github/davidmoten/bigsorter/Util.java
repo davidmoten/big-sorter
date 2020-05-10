@@ -1,8 +1,15 @@
 package com.github.davidmoten.bigsorter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
+import java.util.function.Function;
+
+import com.github.davidmoten.guavamini.Lists;
+import com.github.davidmoten.guavamini.Preconditions;
 
 public final class Util {
 
@@ -25,7 +32,8 @@ public final class Util {
      *            comparator for item
      * @param writer
      *            writer to which common entries are written to
-     * @throws IOException I/O exception
+     * @throws IOException
+     *             I/O exception
      */
     public static <T> void findSame(Reader<? extends T> readerA, Reader<? extends T> readerB,
             Comparator<? super T> comparator, Writer<T> writer) throws IOException {
@@ -46,7 +54,7 @@ public final class Util {
             }
         }
     }
-    
+
     /**
      * Writes common entries from both files to the output file in sorted
      * order.{@code a} and {@code b} must already be sorted.
@@ -63,13 +71,14 @@ public final class Util {
      *            comparator for item
      * @param output
      *            file to which common entries are written to
-     * @throws IOException I/O exception
+     * @throws IOException
+     *             I/O exception
      */
-    public static <T> void findSame(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
-        try (
-          Reader<T> readerA = serializer.createReader(a); 
-          Reader<T> readerB = serializer.createReader(b);
-          Writer<T> writer = serializer.createWriter(output)) {
+    public static <T> void findSame(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
+            File output) throws IOException {
+        try (Reader<T> readerA = serializer.createReader(a);
+                Reader<T> readerB = serializer.createReader(b);
+                Writer<T> writer = serializer.createWriter(output)) {
             Util.findSame(readerA, readerB, comparator, writer);
         }
     }
@@ -89,7 +98,8 @@ public final class Util {
      *            comparator for item
      * @param writer
      *            writer to which common entries are written to
-     * @throws IOException I/O exception
+     * @throws IOException
+     *             I/O exception
      */
     public static <T> void findDifferent(Reader<? extends T> readerA, Reader<? extends T> readerB,
             Comparator<? super T> comparator, Writer<T> writer) throws IOException {
@@ -121,8 +131,8 @@ public final class Util {
 
     /**
      * Writes different entries (only those entries that are only present in one
-     * file) from both files to the output file in sorted order.
-     * {@code a} and {@code b} must already be sorted.
+     * file) from both files to the output file in sorted order. {@code a} and
+     * {@code b} must already be sorted.
      * 
      * @param <T>
      *            item type
@@ -136,21 +146,22 @@ public final class Util {
      *            comparator for item
      * @param output
      *            file to which common entries are written to
-     * @throws IOException I/O exception
+     * @throws IOException
+     *             I/O exception
      */
-    public static <T> void findDifferent(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
-        try (
-          Reader<T> readerA = serializer.createReader(a); 
-          Reader<T> readerB = serializer.createReader(b);
-          Writer<T> writer = serializer.createWriter(output)) {
+    public static <T> void findDifferent(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
+            File output) throws IOException {
+        try (Reader<T> readerA = serializer.createReader(a);
+                Reader<T> readerB = serializer.createReader(b);
+                Writer<T> writer = serializer.createWriter(output)) {
             Util.findDifferent(readerA, readerB, comparator, writer);
         }
     }
 
-    
     /**
-     * Writes to the output file only those entries from the first reader that are not present in the 
-     * second reader. {@code readerA} and {@code readerB} must be reading already sorted data.
+     * Writes to the output file only those entries from the first reader that are
+     * not present in the second reader. {@code readerA} and {@code readerB} must be
+     * reading already sorted data.
      * 
      * @param <T>
      *            item type
@@ -162,7 +173,8 @@ public final class Util {
      *            comparator for item
      * @param writer
      *            writer to which common entries are written to
-     * @throws IOException I/O exception
+     * @throws IOException
+     *             I/O exception
      */
     public static <T> void findComplement(Reader<? extends T> readerA, Reader<? extends T> readerB,
             Comparator<? super T> comparator, Writer<T> writer) throws IOException {
@@ -186,10 +198,11 @@ public final class Util {
             x = readerA.read();
         }
     }
-    
+
     /**
-     * Writes only those entries that are in the first file but not in the second file 
-     * to the output file in sorted order. {@code a} and {@code b} must already be sorted.
+     * Writes only those entries that are in the first file but not in the second
+     * file to the output file in sorted order. {@code a} and {@code b} must already
+     * be sorted.
      * 
      * @param <T>
      *            item type
@@ -203,14 +216,122 @@ public final class Util {
      *            comparator for item
      * @param output
      *            file to which common entries are written to
-     * @throws IOException I/O exception
+     * @throws IOException
+     *             I/O exception
      */
-    public static <T> void findComplement(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator, File output) throws IOException {
-        try (
-          Reader<T> readerA = serializer.createReader(a); 
-          Reader<T> readerB = serializer.createReader(b);
-          Writer<T> writer = serializer.createWriter(output)) {
+    public static <T> void findComplement(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
+            File output) throws IOException {
+        try (Reader<T> readerA = serializer.createReader(a);
+                Reader<T> readerB = serializer.createReader(b);
+                Writer<T> writer = serializer.createWriter(output)) {
             Util.findComplement(readerA, readerB, comparator, writer);
         }
+    }
+
+    public static <T> List<File> splitByCount(File input, Serializer<T> serializer, long count) throws IOException {
+        return splitByCount( //
+                input, //
+                serializer, //
+                n -> new File(input.getParentFile(), input.getName() + "-" + n), //
+                count);
+    }
+    
+    public static <T> List<File> splitByCount(File input, Serializer<T> serializer, Function<Integer, File> output,
+            long count) throws IOException {
+        return splitByCount(Collections.singletonList(input), serializer, output, count);
+    }
+
+    public static <T> List<File> splitByCount(List<File> input, Serializer<T> serializer, Function<Integer, File> output,
+            long count) throws IOException {
+        Preconditions.checkArgument(count > 0, "count must be greater than 0");
+        List<File> list = Lists.newArrayList();
+        T t;
+        int fileNumber = 0;
+        long i = 0;
+        Writer<T> writer = null;
+        try {
+            for (File file : input) {
+                try (Reader<T> reader = serializer.createReader(file)) {
+                    while ((t = reader.read()) != null) {
+                        if (writer == null) {
+                            fileNumber++;
+                            File f = output.apply(fileNumber);
+                            list.add(f);
+                            writer = serializer.createWriter(f);
+                        }
+                        writer.write(t);
+                        i++;
+                        if (i == count) {
+                            writer.close();
+                            writer = null;
+                            i = 0;
+                        }
+                    }
+                }
+            }
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
+        }
+        return list;
+    }
+    
+    public static <T> List<File> splitBySize(File input, Serializer<T> serializer, long maxSize) throws IOException {
+        return splitBySize( //
+                input, //
+                serializer, //
+                n -> new File(input.getParentFile(), input.getName() + "-" + n), //
+                maxSize);
+    }
+    
+    public static <T> List<File> splitBySize(File input, Serializer<T> serializer, Function<Integer, File> output,
+            long maxSize) throws IOException {
+        return splitBySize(Collections.singletonList(input), serializer, output, maxSize);
+    }
+
+    public static <T> List<File> splitBySize(List<File> input, Serializer<T> serializer, Function<Integer, File> output,
+            long maxSize) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        Writer<T> buffer = serializer.createWriter(bytes);
+        List<File> list = Lists.newArrayList();
+        T t;
+        int fileNumber = 0;
+        long n = 0;
+        Writer<T> writer = null;
+        try {
+            for (File file : input) {
+                try (Reader<T> reader = serializer.createReader(file)) {
+                    while ((t = reader.read()) != null) {
+                        // check increase in size from writing t
+                        // by writing to buffer
+                        bytes.reset();
+                        buffer.write(t);
+                        buffer.flush();
+                        n += bytes.size();
+                        if (writer == null) {
+                            fileNumber++;
+                            File f = output.apply(fileNumber);
+                            list.add(f);
+                            writer = serializer.createWriter(f);
+                            n = bytes.size();
+                        } else if (n > maxSize) {
+                            writer.close();
+                            fileNumber++;
+                            File f = output.apply(fileNumber);
+                            list.add(f);
+                            writer = serializer.createWriter(f);
+                            n = bytes.size();
+                        }
+                        writer.write(t);
+                    }
+                }
+            }
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
+        }
+        return list;
     }
 }
