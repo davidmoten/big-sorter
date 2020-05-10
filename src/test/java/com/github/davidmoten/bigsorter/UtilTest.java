@@ -108,7 +108,6 @@ public class UtilTest {
     public void testSplitBySize() throws IOException {
         File a = write("target/a", "1\n2\n3\n4\n5");
         List<File> files = Util.splitBySize(a, Serializer.linesUtf8(), 4);
-        files.stream().forEach(file -> System.out.println(file.getName() + ":\n" + text(file)));
         assertEquals(3, files.size());
         assertEquals("1\n2\n", text(files.get(0)));
         assertEquals("3\n4\n", text(files.get(1)));
@@ -119,7 +118,6 @@ public class UtilTest {
     public void testSplitBySizeSlightlyBigger() throws IOException {
         File a = write("target/a", "1\n2\n3\n4\n5");
         List<File> files = Util.splitBySize(a, Serializer.linesUtf8(), 5);
-        files.stream().forEach(file -> System.out.println(file.getName() + ":\n" + text(file)));
         assertEquals(3, files.size());
         assertEquals("1\n2\n", text(files.get(0)));
         assertEquals("3\n4\n", text(files.get(1)));
@@ -130,7 +128,6 @@ public class UtilTest {
     public void testSplitBySizeLarge() throws IOException {
         File a = write("target/a", "1\n2\n3\n4\n5");
         List<File> files = Util.splitByCount(a, Serializer.linesUtf8(), 100);
-        files.stream().forEach(f -> System.out.println(f.getName() + ":\n" + text(f)));
         assertEquals(1, files.size());
         assertEquals("1\n2\n3\n4\n5\n", text(files.get(0)));
     }
