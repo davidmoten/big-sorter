@@ -168,14 +168,8 @@ public interface Reader<T> extends Closeable, Iterable<T> {
     }
 
     default Stream<T> stream() {
-        return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(iterator(), Spliterator.ORDERED), false).onClose(() -> {
-                    try {
-                        Reader.this.close();
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator(), Spliterator.ORDERED), false)
+                .onClose(() -> Util.close(Reader.this));
     }
 
 }

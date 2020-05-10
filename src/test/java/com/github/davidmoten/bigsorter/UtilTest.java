@@ -1,7 +1,9 @@
 package com.github.davidmoten.bigsorter;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 
@@ -131,7 +134,32 @@ public class UtilTest {
         assertEquals(1, files.size());
         assertEquals("1\n2\n3\n4\n5\n", text(files.get(0)));
     }
+    
+    @Test
+    public void testClose() {
+        AtomicBoolean closed = new AtomicBoolean();
+        Closeable c = new Closeable() {
 
+            @Override
+            public void close() throws IOException {
+                closed.set(true);
+            }};
+        Util.close(c);
+        assertTrue(closed.get());
+    }
+    
+    @Test(expected = UncheckedIOException.class)
+    public void testCloseThrowsUncheckedIOException() {
+        Closeable c = new Closeable() {
+
+            @Override
+            public void close() throws IOException {
+                throw new IOException("boo");
+            }
+        };
+        Util.close(c);
+    }
+    
     private static String text(File f) {
         try {
             return new String(Files.readAllBytes(f.toPath()));

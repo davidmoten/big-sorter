@@ -1,8 +1,10 @@
 package com.github.davidmoten.bigsorter;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -333,5 +335,13 @@ public final class Util {
             }
         }
         return list;
+    }
+    
+    static void close(Closeable c) {
+        try {
+            c.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
