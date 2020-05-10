@@ -307,7 +307,9 @@ try (Stream<String> stream = Sorter
     stream.forEach(System.out::println);
 }
 ``` 
-The interaction is a little bit clumsy because you need to the stream to be auto-closed by the try-catch-with-resources block. The close action of the stream deletes the file used as output. If you don't close the stream then you will accumulate final output files in the temp directory and possibly run out of disk.
+The interaction is a little bit clumsy because you need to the stream to be auto-closed by the try-catch-with-resources block.
+Note especially that a terminal operation (like `.collect(...)` or `count()`) does **not** close the stream. When called,  
+the close action of the stream deletes the file used as output. If you don't close the stream then you will accumulate final output files in the temp directory and possibly run out of disk.
 
 The fact that java.util.Stream has poor support for closing resources tempts the author to switch to a more appropriate functional library like [kool](https://github.com/davidmoten/kool). We'll see.
 
