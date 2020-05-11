@@ -53,7 +53,7 @@ If you want to sort csv add this extra dependency:
 <dependency>
     <groupId>org.apache.commons</groupId>
     <artifactId>commons-csv</artifactId>
-    <version>1.7</version>
+    <version>1.8</version>
 </dependency>
 ```
 
