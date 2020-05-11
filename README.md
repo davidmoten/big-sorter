@@ -25,6 +25,7 @@ Note that the merge step in the diagram above will happen repeatedly till one fi
   * JSON arrays
 * Serialization is customizable
 * Functional style transforms of input data (`filter`, `map`, `flatMap`, `transform`, `transformStream`), includes java.util.Stream support
+* Compare sorted files (`findSame`, `findDifferent`, `findComplement`)
 * Runtime complexity is O(n log(n))
 * 100% test coverage
 
