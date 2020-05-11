@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -106,7 +107,19 @@ public class UtilTest {
         File a = write("target/a", "1\n2\n3\n4\n5");
         Util.splitByCount(a, Serializer.linesUtf8(), 0);
     }
+    
+    @Test
+    public void testSplitByCountNoInputs() throws IOException {
+        List<File> files = Util.splitByCount(Collections.emptyList(), Serializer.linesUtf8(), n -> new File("target/result" + n), 4);
+        assertTrue(files.isEmpty());
+    }
 
+    @Test
+    public void testSplitBySizeNoInputs() throws IOException {
+        List<File> files = Util.splitBySize(Collections.emptyList(), Serializer.linesUtf8(), n -> new File("target/result" + n), 4);
+        assertTrue(files.isEmpty());
+    }
+    
     @Test
     public void testSplitBySize() throws IOException {
         File a = write("target/a", "1\n2\n3\n4\n5");
