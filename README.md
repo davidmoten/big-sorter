@@ -313,6 +313,16 @@ the close action of the stream deletes the file used as output. If you don't clo
 
 The fact that java.util.Stream has poor support for closing resources tempts the author to switch to a more appropriate functional library like [kool](https://github.com/davidmoten/kool). We'll see.
 
+If you want to stream records from an output file you specified (via `output(File)` method, not `outputAsStream()`) do this:
+
+```java
+// ensure reader is closed after handling stream
+try (Reader<T> reader = serializer.createReader(output)) {
+    Stream<T> stream = reader.stream();
+    ...
+}
+```
+
 ## Comparing sorted files
 Once you've got multiple sorted files you may want to perform some comparisons. Common comparisons include:
 
