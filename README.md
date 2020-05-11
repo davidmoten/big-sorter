@@ -294,6 +294,16 @@ Reader<String> reader = Serializer.linesUtf8().createReader(f);
 reader.forEach(System.out::println);
 ```
 
+If you want to stream records from a file do this:
+
+```java
+// ensure reader is closed after handling stream
+try (Reader<T> reader = serializer.createReader(output)) {
+    Stream<T> stream = reader.stream();
+    ...
+}
+```
+
 ## Returning the result as a Stream<T>
 
 You might want to deal with the results of the sort immediately and be prepared to throw away the output file once read by a stream:
@@ -313,15 +323,7 @@ the close action of the stream deletes the file used as output. If you don't clo
 
 The fact that java.util.Stream has poor support for closing resources tempts the author to switch to a more appropriate functional library like [kool](https://github.com/davidmoten/kool). We'll see.
 
-If you want to stream records from an output file you specified (via `output(File)` method, not `outputAsStream()`) do this:
-
-```java
-// ensure reader is closed after handling stream
-try (Reader<T> reader = serializer.createReader(output)) {
-    Stream<T> stream = reader.stream();
-    ...
-}
-```
+See [here](#how-to-read-the-output-file) to stream records from a file.
 
 ## Comparing sorted files
 Once you've got multiple sorted files you may want to perform some comparisons. Common comparisons include:
