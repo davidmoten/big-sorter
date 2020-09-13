@@ -14,8 +14,7 @@ public class Permutations {
     public static <T> void forEach(List<List<T>> lists,
             Consumer<? super List<? extends T>> consumer) {
         List<Integer> indexes = new ArrayList<>();
-        for (@SuppressWarnings("unused")
-        List<T> x : lists) {
+        for (List<T> x : lists) {
             indexes.add(0);
         }
         report(lists, consumer, indexes);
@@ -43,12 +42,12 @@ public class Permutations {
         consumer.accept(output);
     }
 
+    @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         List<String> list1 = Lists.newArrayList("aardvaark", "apple", "azalea");
         List<String> list2 = Lists.newArrayList("bat", "bother", "butter");
         List<String> list3 = Lists.newArrayList("cat", "core");
 
-        @SuppressWarnings("unchecked")
         List<List<String>> lists = Lists.newArrayList(list1, list2, list3);
         Permutations.forEach(lists, System.out::println);
     }
