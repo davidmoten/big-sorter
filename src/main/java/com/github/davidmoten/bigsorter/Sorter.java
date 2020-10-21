@@ -19,7 +19,6 @@ import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,6 +31,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.github.davidmoten.bigsorter.internal.ArrayList;
 import com.github.davidmoten.guavamini.Lists;
 import com.github.davidmoten.guavamini.Preconditions;
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
@@ -53,13 +53,14 @@ public final class Sorter<T> {
     private final File tempDirectory;
     private final Function<? super Reader<T>, ? extends Reader<? extends T>> transform;
     private final boolean unique;
+    private final boolean initialSortInParallel;
     private long count = 0;
     
 
     Sorter(List<Supplier<? extends InputStream>> inputs, Serializer<T> serializer, File output,
-            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
-            Consumer<? super String> log, int bufferSize, File tempDirectory,
-            Function<? super Reader<T>, ? extends Reader<? extends T>> transform, boolean unique) {
+            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log,
+            int bufferSize, File tempDirectory, Function<? super Reader<T>, ? extends Reader<? extends T>> transform,
+            boolean unique, boolean initialSortInParallel) {
         Preconditions.checkNotNull(inputs, "inputs cannot be null");
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
         Preconditions.checkNotNull(output, "output cannot be null");
@@ -76,6 +77,7 @@ public final class Sorter<T> {
         this.tempDirectory = tempDirectory;
         this.transform = transform;
         this.unique = unique;
+        this.initialSortInParallel = initialSortInParallel;
     }
 
     public static <T> Builder<T> serializer(Serializer<T> serializer) {
@@ -112,7 +114,8 @@ public final class Sorter<T> {
         private int bufferSize = 8192;
         private File tempDirectory = new File(System.getProperty("java.io.tmpdir"));
         private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
-        public boolean unique;
+        private boolean unique;
+        private boolean initialSortInParallel;
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
@@ -283,6 +286,16 @@ public final class Sorter<T> {
         public S unique() {
             return unique(true);
         }
+        
+        @SuppressWarnings("unchecked")
+        public S initialSortInParallel(boolean initialSortInParallel) {
+            b.initialSortInParallel = initialSortInParallel;
+            return (S) this;
+        }
+        
+        public S initialSortInParallel() {
+            return initialSortInParallel(true);
+        }
 
         @SuppressWarnings("unchecked")
         public S logger(Consumer<? super String> logger) {
@@ -333,7 +346,7 @@ public final class Sorter<T> {
         public void sort() {
             Sorter<T> sorter = new Sorter<T>(b.inputs, b.serializer, b.output, b.comparator,
                     b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                    b.transform, b.unique);
+                    b.transform, b.unique, b.initialSortInParallel);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -372,7 +385,7 @@ public final class Sorter<T> {
                 b.output = nextTempFile(b.tempDirectory);
                 Sorter<T> sorter = new Sorter<T>(b.inputs, b.serializer, b.output, b.comparator,
                         b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                        b.transform, b.unique);
+                        b.transform, b.unique, b.initialSortInParallel);
                 sorter.sort();
                 return b.serializer //
                         .createReader(b.output) //
@@ -535,7 +548,11 @@ public final class Sorter<T> {
     private File sortAndWriteToFile(ArrayList<T> list) throws FileNotFoundException, IOException {
         File file = nextTempFile();
         long t = System.currentTimeMillis();
-        list.sort(comparator);
+        if (initialSortInParallel) {
+            list.parallelSort(comparator);
+        } else {
+            list.sort(comparator);
+        }
         writeToFile(list, file);
         DecimalFormat df = new DecimalFormat("0.000");
         count += list.size();

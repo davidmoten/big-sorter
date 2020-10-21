@@ -527,6 +527,7 @@ public class SorterTest {
                     .comparator((x, y) -> Integer.compare(x, y)) //
                     .input(input) //
                     .output(OUTPUT) //
+                    .maxItemsPerFile(10000000) //
                     .logger(System.out::println) //
                     .sort();
             System.out.println(n + " integers sorted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
@@ -744,7 +745,7 @@ public class SorterTest {
                 new ByteArrayInputStream(new byte[0]));
         Sorter<String> sorter = new Sorter<String>(list, Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
-                }, 8192, new File(System.getProperty("java.io.tmpdir")), r -> r, false);
+                }, 8192, new File(System.getProperty("java.io.tmpdir")), r -> r, false, false);
         sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
     }
 
