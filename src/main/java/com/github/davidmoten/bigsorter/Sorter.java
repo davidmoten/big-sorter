@@ -262,6 +262,11 @@ public final class Sorter<T> {
             return (S) this;
         }
 
+        /**
+         * Sets the number of items in each file for the initial split. Default is 100_000.
+         * @param value the number of items in each file for the initial split
+         * @return this
+         */
         @SuppressWarnings("unchecked")
         public S maxItemsPerFile(int value) {
             Preconditions.checkArgument(value > 0, "maxItemsPerFile must be greater than 0");
@@ -428,7 +433,8 @@ public final class Sorter<T> {
                 }
             }
         }
-        log("completed inital split and sort, starting merge");
+        log("completed initial split and sort, starting merge, elapsed time="
+                + (System.currentTimeMillis() - time) / 1000.0 + "s");
         File result = merge(files);
         Files.move( //
                 result.toPath(), //

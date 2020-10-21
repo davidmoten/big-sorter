@@ -527,6 +527,7 @@ public class SorterTest {
                     .comparator((x, y) -> Integer.compare(x, y)) //
                     .input(input) //
                     .output(OUTPUT) //
+                    .logger(System.out::println) //
                     .sort();
             System.out.println(n + " integers sorted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
             // ensure ascending
