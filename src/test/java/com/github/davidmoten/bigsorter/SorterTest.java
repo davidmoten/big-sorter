@@ -528,6 +528,7 @@ public class SorterTest {
                     .input(input) //
                     .output(OUTPUT) //
                     .maxItemsPerFile(10000000) //
+                    .initialSortInParallel() //
                     .logger(System.out::println) //
                     .sort();
             System.out.println(n + " integers sorted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
