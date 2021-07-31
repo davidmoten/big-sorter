@@ -19,7 +19,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <jmh.version>1.26</jmh.version>
+        <jmh.version>1.32</jmh.version>
 
         <checkstyle.version>3.0.0</checkstyle.version>
         <findbugs.version>2.5.4</findbugs.version>
