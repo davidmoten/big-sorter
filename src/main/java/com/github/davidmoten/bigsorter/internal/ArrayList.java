@@ -794,26 +794,27 @@ public class ArrayList<E> extends AbstractList<E>
      */
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException {
-        elementData = EMPTY_ELEMENTDATA;
-
-        // Read in size, and any hidden stuff
-        s.defaultReadObject();
-
-        // Read in capacity
-        s.readInt(); // ignored
-
-        if (size > 0) {
-            // be like clone(), allocate array based upon size not capacity
-            int capacity = calculateCapacity(elementData, size);
-            SharedSecrets.getJavaOISAccess().checkArray(s, Object[].class, capacity);
-            ensureCapacityInternal(size);
-
-            Object[] a = elementData;
-            // Read in all elements in the proper order.
-            for (int i=0; i<size; i++) {
-                a[i] = s.readObject();
-            }
-        }
+//        elementData = EMPTY_ELEMENTDATA;
+//
+//        // Read in size, and any hidden stuff
+//        s.defaultReadObject();
+//
+//        // Read in capacity
+//        s.readInt(); // ignored
+//
+//        if (size > 0) {
+//            // be like clone(), allocate array based upon size not capacity
+//            int capacity = calculateCapacity(elementData, size);
+//            SharedSecrets.getJavaOISAccess().checkArray(s, Object[].class, capacity);
+//            ensureCapacityInternal(size);
+//
+//            Object[] a = elementData;
+//            // Read in all elements in the proper order.
+//            for (int i=0; i<size; i++) {
+//                a[i] = s.readObject();
+//            }
+//        }
+        throw new UnsupportedOperationException("sun.misc.SharedSecrets not available on all jdks so removed support for this method");
     }
 
     /**
