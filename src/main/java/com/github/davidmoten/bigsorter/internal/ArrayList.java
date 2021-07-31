@@ -44,8 +44,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-import sun.misc.SharedSecrets;
-
 /**
  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
  * all optional list operations, and permits all elements, including
@@ -120,7 +118,6 @@ import sun.misc.SharedSecrets;
  * @since   1.2
  */
 
-@SuppressWarnings("restriction")
 public class ArrayList<E> extends AbstractList<E>
         implements List<E>, RandomAccess, Cloneable, java.io.Serializable
 {
