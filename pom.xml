@@ -166,8 +166,10 @@
                 </executions>
                 <configuration>
                     <excludes>
-                        <exclude>**/ArrayList.*</exclude>
-                        <exclude>**/AbstractList.*</exclude>
+                        <exclude>**/ArrayList*</exclude>
+                        <exclude>**/AbstractList*</exclude>
+                        <exclude>**/SubList*</exclude>
+                        <exclude>**/RandomAccessSubList*</exclude>
                     </excludes>
                 </configuration>
             </plugin>
