@@ -13,8 +13,6 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -44,31 +42,30 @@ import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 // and sort() in one thread, don't seek to reuse the same Sorter object. 
 public final class Sorter<T> {
 
-    private final List<Supplier<? extends InputStream>> inputs;
+    private final FileSystem fs;
     private final Serializer<T> serializer;
-    private final File output;
+    private final AbstractFile output;
     private final Comparator<? super T> comparator;
     private final int maxFilesPerMerge;
     private final int maxItemsPerPart;
     private final Consumer<? super String> log;
     private final int bufferSize;
-    private final File tempDirectory;
     private final Function<? super Reader<T>, ? extends Reader<? extends T>> transform;
     private final boolean unique;
     private final boolean initialSortInParallel;
     private long count = 0;
-    
 
-    Sorter(List<Supplier<? extends InputStream>> inputs, Serializer<T> serializer, File output,
-            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log,
-            int bufferSize, File tempDirectory, Function<? super Reader<T>, ? extends Reader<? extends T>> transform,
-            boolean unique, boolean initialSortInParallel) {
-        Preconditions.checkNotNull(inputs, "inputs cannot be null");
+    Sorter(FileSystem fs, Serializer<T> serializer, AbstractFile output,
+            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
+            Consumer<? super String> log, int bufferSize,
+            Function<? super Reader<T>, ? extends Reader<? extends T>> transform, boolean unique,
+            boolean initialSortInParallel) {
+        Preconditions.checkNotNull(fs, "fs cannot be null");
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
         Preconditions.checkNotNull(output, "output cannot be null");
         Preconditions.checkNotNull(comparator, "comparator cannot be null");
         Preconditions.checkNotNull(transform, "transform cannot be null");
-        this.inputs = inputs;
+        this.fs = fs;
         this.serializer = serializer;
         this.output = output;
         this.comparator = comparator;
@@ -76,7 +73,6 @@ public final class Sorter<T> {
         this.maxItemsPerPart = maxItemsPerFile;
         this.log = log;
         this.bufferSize = bufferSize;
-        this.tempDirectory = tempDirectory;
         this.transform = transform;
         this.unique = unique;
         this.initialSortInParallel = initialSortInParallel;
@@ -144,7 +140,7 @@ public final class Sorter<T> {
                     .asList(strings) //
                     .stream() //
                     .map(string -> new ByteArrayInputStream(string.getBytes(charset))) //
-                    .map(bis -> (Supplier<InputStream>)(() -> bis)) //
+                    .map(bis -> (Supplier<InputStream>) (() -> bis)) //
                     .collect(Collectors.toList());
             return inputStreams(list);
         }
@@ -153,20 +149,20 @@ public final class Sorter<T> {
             Preconditions.checkNotNull(strings);
             return input(StandardCharsets.UTF_8, strings);
         }
-        
+
         public Builder3<T> input(InputStream... inputs) {
             List<Supplier<InputStream>> list = Lists.newArrayList();
-            for (InputStream in:inputs) {
+            for (InputStream in : inputs) {
                 list.add(() -> new NonClosingInputStream(in));
             }
             return inputStreams(list);
         }
-        
+
         public Builder3<T> input(Supplier<? extends InputStream> input) {
             Preconditions.checkNotNull(input, "input cannot be null");
             return inputStreams(Collections.singletonList(input));
         }
-        
+
         public Builder3<T> input(File... files) {
             return input(Arrays.asList(files));
         }
@@ -175,28 +171,28 @@ public final class Sorter<T> {
             Preconditions.checkNotNull(files, "files cannot be null");
             return inputStreams(files //
                     .stream() //
-                    .map(file -> supplier(file)) //
+                    .map(file -> supplier(new StandardFile(file))) //
                     .collect(Collectors.toList()));
         }
-        
+
         public Builder3<T> inputStreams(List<? extends Supplier<? extends InputStream>> inputs) {
             Preconditions.checkNotNull(inputs);
-            for (Supplier<? extends InputStream> input: inputs) {
+            for (Supplier<? extends InputStream> input : inputs) {
                 b.inputs.add(input);
             }
             return new Builder3<T>(b);
         }
-        
-        private Supplier<InputStream> supplier(File file) {
+
+        private Supplier<InputStream> supplier(AbstractFile file) {
             return () -> {
                 try {
                     return openFile(file, b.bufferSize);
-                } catch (FileNotFoundException e) {
+                } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             };
         }
-        
+
     }
 
     public static final class Builder3<T> {
@@ -205,18 +201,18 @@ public final class Sorter<T> {
         Builder3(Builder<T> b) {
             this.b = b;
         }
-        
+
         public Builder3<T> filter(Predicate<? super T> predicate) {
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
             return transform(r -> currentTransform.apply(r).filter(predicate));
         }
-        
+
         @SuppressWarnings("unchecked")
         public Builder3<T> map(Function<? super T, ? extends T> mapper) {
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
             return transform(r -> ((Reader<T>) currentTransform.apply(r)).map(mapper));
         }
-        
+
         @SuppressWarnings("unchecked")
         public Builder3<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
@@ -246,13 +242,13 @@ public final class Sorter<T> {
             b.output = output;
             return new Builder4<T>(b);
         }
-        
+
         public Builder5<T> outputAsStream() {
             return new Builder5<T>(b);
         }
 
     }
-    
+
     public static class Builder4Base<T, S extends Builder4Base<T, S>> {
         protected final Builder<T> b;
 
@@ -268,7 +264,9 @@ public final class Sorter<T> {
         }
 
         /**
-         * Sets the number of items in each file for the initial split. Default is 100_000.
+         * Sets the number of items in each file for the initial split. Default is
+         * 100_000.
+         * 
          * @param value the number of items in each file for the initial split
          * @return this
          */
@@ -278,23 +276,23 @@ public final class Sorter<T> {
             b.maxItemsPerFile = value;
             return (S) this;
         }
-        
+
         @SuppressWarnings("unchecked")
         public S unique(boolean value) {
             b.unique = value;
             return (S) this;
         }
-        
+
         public S unique() {
             return unique(true);
         }
-        
+
         @SuppressWarnings("unchecked")
         public S initialSortInParallel(boolean initialSortInParallel) {
             b.initialSortInParallel = initialSortInParallel;
             return (S) this;
         }
-        
+
         public S initialSortInParallel() {
             return initialSortInParallel(true);
         }
@@ -330,9 +328,8 @@ public final class Sorter<T> {
             b.tempDirectory = directory;
             return (S) this;
         }
-        
-    }
 
+    }
 
     public static final class Builder4<T> extends Builder4Base<T, Builder4<T>> {
 
@@ -346,9 +343,10 @@ public final class Sorter<T> {
          * {@link UncheckedIOException}.
          */
         public void sort() {
-            Sorter<T> sorter = new Sorter<T>(b.inputs, b.serializer, b.output, b.comparator,
-                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                    b.transform, b.unique, b.initialSortInParallel);
+            FileSystem fs = new StandardFileSystem(b.tempDirectory, b.inputs, b.output);
+            Sorter<T> sorter = new Sorter<T>(fs, b.serializer, fs.result(), b.comparator,
+                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.transform,
+                    b.unique, b.initialSortInParallel);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -358,7 +356,7 @@ public final class Sorter<T> {
         }
 
     }
-    
+
     public static final class Builder5<T> {
 
         private final Builder<T> b;
@@ -384,25 +382,25 @@ public final class Sorter<T> {
          */
         public Stream<T> sort() {
             try {
-                b.output = nextTempFile(b.tempDirectory);
-                Sorter<T> sorter = new Sorter<T>(b.inputs, b.serializer, b.output, b.comparator,
-                        b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                        b.transform, b.unique, b.initialSortInParallel);
+                FileSystem fs = new StandardFileSystem(b.tempDirectory, b.inputs, b.output);
+                Sorter<T> sorter = new Sorter<T>(fs, b.serializer, fs.result(), b.comparator,
+                        b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.transform,
+                        b.unique, b.initialSortInParallel);
                 sorter.sort();
                 return b.serializer //
-                        .createReader(b.output) //
+                        .createReader(fs.result()) //
                         .stream() //
                         .onClose(() -> b.output.delete());
             } catch (Throwable e) {
                 b.output.delete();
                 throw Util.toRuntimeException(e);
-            } 
+            }
         }
 
     }
-    
-    static InputStream openFile(File file, int bufferSize) throws FileNotFoundException {
-        return new BufferedInputStream(new FileInputStream(file), bufferSize);
+
+    static InputStream openFile(AbstractFile file, int bufferSize) throws IOException {
+        return new BufferedInputStream(file.createInputStream(), bufferSize);
     }
 
     private void log(String msg, Object... objects) {
@@ -412,20 +410,125 @@ public final class Sorter<T> {
         }
     }
 
-    private File sort() throws IOException {
+    public interface FileSystem {
+        void init();
 
-        tempDirectory.mkdirs();
+        List<Supplier<? extends InputStream>> inputs();
+
+        AbstractFile nextTempFile();
+
+        AbstractFile result();
+    }
+
+    public interface AbstractFile {
+        String name();
+
+        void delete();
+        
+        AbstractFile sibling(String name);
+
+        InputStream createInputStream() throws IOException;
+
+        OutputStream createOutputStream() throws IOException;
+    }
+
+    public static final class StandardFileSystem implements FileSystem {
+
+        private final File tempDirectory;
+        private final List<Supplier<? extends InputStream>> inputs;
+        private final AbstractFile output;
+
+        public StandardFileSystem(File tempDirectory, List<Supplier<? extends InputStream>> inputs,
+                File output) {
+            this.tempDirectory = tempDirectory;
+            this.inputs = inputs;
+            if (output != null) {
+                this.output = new StandardFile(output);
+            } else {
+                this.output = nextTempFile();
+            }
+        }
+
+        @Override
+        public void init() {
+            tempDirectory.mkdirs();
+        }
+
+        @Override
+        public List<Supplier<? extends InputStream>> inputs() {
+            return inputs;
+        }
+
+        @Override
+        public AbstractFile nextTempFile() {
+            try {
+                return new StandardFile(Sorter.nextTempFile(tempDirectory));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        @Override
+        public AbstractFile result() {
+            return output;
+        }
+
+    }
+
+    public static final class StandardFile implements AbstractFile {
+
+        private final File file;
+
+        public StandardFile(File file) {
+            this.file = file;
+        }
+
+        @Override
+        public String name() {
+            return file.getName();
+        }
+
+        @Override
+        public OutputStream createOutputStream() throws IOException {
+            return new FileOutputStream(file);
+        }
+
+        @Override
+        public InputStream createInputStream() throws IOException {
+            return new FileInputStream(file);
+        }
+
+        @Override
+        public void delete() {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public AbstractFile sibling(String name) {
+            return new StandardFile(new File(file.getParentFile(), name));
+        }
+        
+        public File file() {
+            return file;
+        }
+
+    }
+
+    private AbstractFile sort() throws IOException {
+
+        fs.init();
 
         // read the input into sorted small files
         long time = System.currentTimeMillis();
         count = 0;
-        List<File> files = new ArrayList<>();
+        List<AbstractFile> files = new ArrayList<>();
         log("starting sort");
         log("unique = " + unique);
-        
+
         int i = 0;
         ArrayList<T> list = new ArrayList<>();
-        for (Supplier<? extends InputStream> supplier: inputs) {
+        for (Supplier<? extends InputStream> supplier : fs.inputs()) {
             try (InputStream in = supplier.get();
                     Reader<? extends T> reader = transform.apply(serializer.createReader(in))) {
                 while (true) {
@@ -437,7 +540,7 @@ public final class Sorter<T> {
                     if (t == null || i == maxItemsPerPart) {
                         i = 0;
                         if (list.size() > 0) {
-                            File f = sortAndWriteToFile(list);
+                            AbstractFile f = sortAndWriteToFile(fs, list);
                             files.add(f);
                             list.clear();
                         }
@@ -450,59 +553,62 @@ public final class Sorter<T> {
         }
         log("completed initial split and sort, starting merge, elapsed time="
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
-        File result = merge(files);
-        Files.move( //
-                result.toPath(), //
-                output.toPath(), //
-                StandardCopyOption.ATOMIC_MOVE, //
-                StandardCopyOption.REPLACE_EXISTING);
+        merge(fs, files);
+//        Files.move( //
+//                result.toPath(), //
+//                output.toPath(), //
+//                StandardCopyOption.ATOMIC_MOVE, //
+//                StandardCopyOption.REPLACE_EXISTING);
         log("sort of " + count + " records completed in "
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
         return output;
     }
 
     @VisibleForTesting
-    File merge(List<File> files) {
+    AbstractFile merge(FileSystem fs, List<AbstractFile> files) {
         // merge the files in chunks repeatededly until only one remains
         // TODO make a better guess at the chunk size so groups are more even
         try {
             while (files.size() > 1) {
-                List<File> nextRound = new ArrayList<>();
+                List<AbstractFile> nextRound = new ArrayList<>();
+                AbstractFile mergeTo;
+                if (files.size() <= maxFilesPerMerge) {
+                    // is final merge
+                    mergeTo = output;
+                } else {
+                    mergeTo = fs.nextTempFile();
+                }
                 for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
-                    File merged = mergeGroup(
-                            files.subList(i, Math.min(files.size(), i + maxFilesPerMerge)));
+                    AbstractFile merged = mergeGroup(fs,
+                            files.subList(i, Math.min(files.size(), i + maxFilesPerMerge)),
+                            mergeTo);
                     nextRound.add(merged);
                 }
                 files = nextRound;
             }
-            File result;
             if (files.isEmpty()) {
-                output.delete();
-                output.createNewFile();
-                result = output;
-            } else {
-                result = files.get(0);
+                output.createOutputStream().close();
             }
-            return result;
+            return output;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private File mergeGroup(List<File> list) throws IOException {
+    private AbstractFile mergeGroup(FileSystem fs, List<AbstractFile> list, AbstractFile output)
+            throws IOException {
         log("merging %s files", list.size());
         if (list.size() == 1) {
             return list.get(0);
         }
         List<State<T>> states = new ArrayList<>();
-        for (File f : list) {
+        for (AbstractFile f : list) {
             State<T> st = createState(f);
             // note that st.value will be present otherwise the file would be empty
             // and an empty file would not be passed to this method
             states.add(st);
         }
-        File output = nextTempFile();
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output), bufferSize);
+        try (OutputStream out = new BufferedOutputStream(output.createOutputStream(), bufferSize);
                 Writer<T> writer = serializer.createWriter(out)) {
             PriorityQueue<State<T>> q = new PriorityQueue<>(
                     (x, y) -> comparator.compare(x.value, y.value));
@@ -528,7 +634,7 @@ public final class Sorter<T> {
         return output;
     }
 
-    private State<T> createState(File f) throws IOException {
+    private State<T> createState(AbstractFile f) throws IOException {
         InputStream in = openFile(f, bufferSize);
         Reader<T> reader = serializer.createReader(in);
         T t = reader.readAutoClosing();
@@ -536,19 +642,20 @@ public final class Sorter<T> {
     }
 
     private static final class State<T> {
-        final File file;
+        final AbstractFile file;
         Reader<T> reader;
         T value;
 
-        State(File file, Reader<T> reader, T value) {
+        State(AbstractFile file, Reader<T> reader, T value) {
             this.file = file;
             this.reader = reader;
             this.value = value;
         }
     }
 
-    private File sortAndWriteToFile(ArrayList<T> list) throws FileNotFoundException, IOException {
-        File file = nextTempFile();
+    private AbstractFile sortAndWriteToFile(FileSystem fs, ArrayList<T> list)
+            throws FileNotFoundException, IOException {
+        AbstractFile file = fs.nextTempFile();
         long t = System.currentTimeMillis();
         if (initialSortInParallel) {
             list.parallelSort(comparator);
@@ -561,13 +668,14 @@ public final class Sorter<T> {
         log("total=%s, sorted %s records to file %s in %ss", //
                 count, //
                 list.size(), //
-                file.getName(), //
+                file.name(), //
                 df.format((System.currentTimeMillis() - t) / 1000.0));
         return file;
     }
 
-    private void writeToFile(List<T> list, File f) throws FileNotFoundException, IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f), bufferSize);
+    private void writeToFile(List<T> list, AbstractFile f)
+            throws FileNotFoundException, IOException {
+        try (OutputStream out = new BufferedOutputStream(f.createOutputStream(), bufferSize);
                 Writer<T> writer = serializer.createWriter(out)) {
             T last = null;
             for (T t : list) {
@@ -579,10 +687,6 @@ public final class Sorter<T> {
         }
     }
 
-    private File nextTempFile() throws IOException {
-        return nextTempFile(tempDirectory);
-    }
-    
     private static File nextTempFile(File tempDirectory) throws IOException {
         return File.createTempFile("big-sorter", "", tempDirectory);
     }

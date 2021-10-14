@@ -1,9 +1,9 @@
 package com.github.davidmoten.bigsorter;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -13,6 +13,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.davidmoten.bigsorter.Sorter.AbstractFile;
 import com.github.davidmoten.guavamini.Preconditions;
 
 public interface Serializer<T> {
@@ -21,12 +22,12 @@ public interface Serializer<T> {
 
     Writer<T> createWriter(OutputStream out);
     
-    default Reader<T> createReader(File file) throws FileNotFoundException {
-        return createReader(new FileInputStream(file));
+    default Reader<T> createReader(AbstractFile file) throws IOException {
+        return createReader(file.createInputStream());
     }
     
-    default Writer<T> createWriter(File file) throws FileNotFoundException {
-        return createWriter(new FileOutputStream(file));
+    default Writer<T> createWriter(AbstractFile file) throws IOException {
+        return createWriter(file.createOutputStream());
     }
 
     static Serializer<String> linesUtf8() {
