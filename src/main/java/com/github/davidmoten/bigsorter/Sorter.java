@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -56,9 +58,9 @@ public final class Sorter<T> {
     private final boolean initialSortInParallel;
     private long count = 0;
 
-    Sorter(FileSystem fs, Serializer<T> serializer,List<Supplier<? extends InputStream>> inputs, AbstractFile output,
-            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
-            Consumer<? super String> log, int bufferSize,
+    Sorter(FileSystem fs, Serializer<T> serializer, List<Supplier<? extends InputStream>> inputs,
+            AbstractFile output, Comparator<? super T> comparator, int maxFilesPerMerge,
+            int maxItemsPerFile, Consumer<? super String> log, int bufferSize,
             Function<? super Reader<T>, ? extends Reader<? extends T>> transform, boolean unique,
             boolean initialSortInParallel) {
         Preconditions.checkNotNull(fs, "fs cannot be null");
@@ -346,9 +348,9 @@ public final class Sorter<T> {
          */
         public void sort() {
             FileSystem fs = new StandardFileSystem(b.tempDirectory);
-            Sorter<T> sorter = new Sorter<T>(fs, b.serializer, b.inputs,output(fs, b.output), b.comparator,
-                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.transform,
-                    b.unique, b.initialSortInParallel);
+            Sorter<T> sorter = new Sorter<T>(fs, b.serializer, b.inputs, output(fs, b.output),
+                    b.comparator, b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize,
+                    b.transform, b.unique, b.initialSortInParallel);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -358,7 +360,7 @@ public final class Sorter<T> {
         }
 
     }
-    
+
     private static AbstractFile output(FileSystem fs, File output) {
         if (output != null) {
             return new StandardFile(output);
@@ -401,7 +403,7 @@ public final class Sorter<T> {
                 return b.serializer //
                         .createReader(output) //
                         .stream() //
-                        .onClose(() -> b.output.delete());
+                        .onClose(() -> output.delete());
             } catch (Throwable e) {
                 b.output.delete();
                 throw Util.toRuntimeException(e);
@@ -426,17 +428,19 @@ public final class Sorter<T> {
 
         AbstractFile nextTempFile();
     }
-    
+
     public interface AbstractFile {
         String name();
 
         void delete();
-        
+
         AbstractFile sibling(String name);
 
         InputStream createInputStream() throws IOException;
 
         OutputStream createOutputStream() throws IOException;
+
+        void moveTo(AbstractFile output);
     }
 
     public static final class StandardFileSystem implements FileSystem {
@@ -495,13 +499,26 @@ public final class Sorter<T> {
         public AbstractFile sibling(String name) {
             return new StandardFile(new File(file.getParentFile(), name));
         }
-        
+
         public File file() {
             return file;
         }
 
         public static StandardFile of(File file) {
             return new StandardFile(file);
+        }
+
+        @Override
+        public void moveTo(AbstractFile f) {
+            try {
+                Files.move( //
+                        file.toPath(), //
+                        ((StandardFile) f).file().toPath(), //
+                        StandardCopyOption.ATOMIC_MOVE, //
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
     }
@@ -545,11 +562,6 @@ public final class Sorter<T> {
         log("completed initial split and sort, starting merge, elapsed time="
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
         merge(fs, files);
-//        Files.move( //
-//                result.toPath(), //
-//                output.toPath(), //
-//                StandardCopyOption.ATOMIC_MOVE, //
-//                StandardCopyOption.REPLACE_EXISTING);
         log("sort of " + count + " records completed in "
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
         return output;
@@ -560,6 +572,10 @@ public final class Sorter<T> {
         // merge the files in chunks repeatededly until only one remains
         // TODO make a better guess at the chunk size so groups are more even
         try {
+            if (files.size() == 1) {
+                files.get(0).moveTo(output);
+                return output;
+            }
             while (files.size() > 1) {
                 List<AbstractFile> nextRound = new ArrayList<>();
                 AbstractFile mergeTo;
