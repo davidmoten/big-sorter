@@ -40,6 +40,9 @@ import org.apache.commons.csv.CSVRecord;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.davidmoten.bigsorter.Sorter.FileSystem;
+import com.github.davidmoten.bigsorter.Sorter.StandardFile;
+import com.github.davidmoten.bigsorter.Sorter.StandardFileSystem;
 import com.github.davidmoten.guavamini.Lists;
 
 public class SorterTest {
@@ -742,12 +745,25 @@ public class SorterTest {
 
     @Test(expected = UncheckedIOException.class)
     public void testMergeFileWhenDoesNotExist() {
-        List<Supplier<? extends InputStream>> list = Collections.singletonList(() ->  
-                new ByteArrayInputStream(new byte[0]));
-        Sorter<String> sorter = new Sorter<String>(list, Serializer.linesUtf8(),
-                OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
-                }, 8192, new File(System.getProperty("java.io.tmpdir")), r -> r, false, false);
-        sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
+        FileSystem fs = new StandardFileSystem(new File(System.getProperty("java.io.tmpdir")));
+        List<Supplier<? extends InputStream>> list = Collections
+                .singletonList(() -> new ByteArrayInputStream(new byte[0]));
+        Sorter<String> sorter = new Sorter<String>( //
+                fs, //
+                Serializer.linesUtf8(), //
+                list, //
+                new StandardFile(OUTPUT), //
+                Comparator.naturalOrder(), //
+                3, //
+                1000, //
+                x -> {
+                }, //
+                8192, //
+                r -> r, //
+                false, //
+                false);
+        sorter.merge(fs, Lists.newArrayList(StandardFile.of(new File("target/doesnotexist")),
+                StandardFile.of(new File("target/doesnotexist2"))));
     }
 
     @Test(expected=RuntimeException.class)

@@ -44,6 +44,7 @@ public final class Sorter<T> {
 
     private final FileSystem fs;
     private final Serializer<T> serializer;
+    private final List<Supplier<? extends InputStream>> inputs;
     private final AbstractFile output;
     private final Comparator<? super T> comparator;
     private final int maxFilesPerMerge;
@@ -55,7 +56,7 @@ public final class Sorter<T> {
     private final boolean initialSortInParallel;
     private long count = 0;
 
-    Sorter(FileSystem fs, Serializer<T> serializer, AbstractFile output,
+    Sorter(FileSystem fs, Serializer<T> serializer,List<Supplier<? extends InputStream>> inputs, AbstractFile output,
             Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
             Consumer<? super String> log, int bufferSize,
             Function<? super Reader<T>, ? extends Reader<? extends T>> transform, boolean unique,
@@ -67,6 +68,7 @@ public final class Sorter<T> {
         Preconditions.checkNotNull(transform, "transform cannot be null");
         this.fs = fs;
         this.serializer = serializer;
+        this.inputs = inputs;
         this.output = output;
         this.comparator = comparator;
         this.maxFilesPerMerge = maxFilesPerMerge;
@@ -343,8 +345,8 @@ public final class Sorter<T> {
          * {@link UncheckedIOException}.
          */
         public void sort() {
-            FileSystem fs = new StandardFileSystem(b.tempDirectory, b.inputs, b.output);
-            Sorter<T> sorter = new Sorter<T>(fs, b.serializer, fs.result(), b.comparator,
+            FileSystem fs = new StandardFileSystem(b.tempDirectory);
+            Sorter<T> sorter = new Sorter<T>(fs, b.serializer, b.inputs,output(fs, b.output), b.comparator,
                     b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.transform,
                     b.unique, b.initialSortInParallel);
             try {
@@ -355,6 +357,14 @@ public final class Sorter<T> {
             }
         }
 
+    }
+    
+    private static AbstractFile output(FileSystem fs, File output) {
+        if (output != null) {
+            return new StandardFile(output);
+        } else {
+            return fs.nextTempFile();
+        }
     }
 
     public static final class Builder5<T> {
@@ -382,13 +392,14 @@ public final class Sorter<T> {
          */
         public Stream<T> sort() {
             try {
-                FileSystem fs = new StandardFileSystem(b.tempDirectory, b.inputs, b.output);
-                Sorter<T> sorter = new Sorter<T>(fs, b.serializer, fs.result(), b.comparator,
+                FileSystem fs = new StandardFileSystem(b.tempDirectory);
+                AbstractFile output = output(fs, b.output);
+                Sorter<T> sorter = new Sorter<T>(fs, b.serializer, b.inputs, output, b.comparator,
                         b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.transform,
                         b.unique, b.initialSortInParallel);
                 sorter.sort();
                 return b.serializer //
-                        .createReader(fs.result()) //
+                        .createReader(output) //
                         .stream() //
                         .onClose(() -> b.output.delete());
             } catch (Throwable e) {
@@ -413,13 +424,9 @@ public final class Sorter<T> {
     public interface FileSystem {
         void init();
 
-        List<Supplier<? extends InputStream>> inputs();
-
         AbstractFile nextTempFile();
-
-        AbstractFile result();
     }
-
+    
     public interface AbstractFile {
         String name();
 
@@ -435,28 +442,14 @@ public final class Sorter<T> {
     public static final class StandardFileSystem implements FileSystem {
 
         private final File tempDirectory;
-        private final List<Supplier<? extends InputStream>> inputs;
-        private final AbstractFile output;
 
-        public StandardFileSystem(File tempDirectory, List<Supplier<? extends InputStream>> inputs,
-                File output) {
+        public StandardFileSystem(File tempDirectory) {
             this.tempDirectory = tempDirectory;
-            this.inputs = inputs;
-            if (output != null) {
-                this.output = new StandardFile(output);
-            } else {
-                this.output = nextTempFile();
-            }
         }
 
         @Override
         public void init() {
             tempDirectory.mkdirs();
-        }
-
-        @Override
-        public List<Supplier<? extends InputStream>> inputs() {
-            return inputs;
         }
 
         @Override
@@ -466,11 +459,6 @@ public final class Sorter<T> {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-        }
-
-        @Override
-        public AbstractFile result() {
-            return output;
         }
 
     }
@@ -500,8 +488,7 @@ public final class Sorter<T> {
 
         @Override
         public void delete() {
-            // TODO Auto-generated method stub
-
+            file.delete();
         }
 
         @Override
@@ -511,6 +498,10 @@ public final class Sorter<T> {
         
         public File file() {
             return file;
+        }
+
+        public static StandardFile of(File file) {
+            return new StandardFile(file);
         }
 
     }
@@ -528,7 +519,7 @@ public final class Sorter<T> {
 
         int i = 0;
         ArrayList<T> list = new ArrayList<>();
-        for (Supplier<? extends InputStream> supplier : fs.inputs()) {
+        for (Supplier<? extends InputStream> supplier : inputs) {
             try (InputStream in = supplier.get();
                     Reader<? extends T> reader = transform.apply(serializer.createReader(in))) {
                 while (true) {
