@@ -521,6 +521,15 @@ public final class Sorter<T> {
             }
         }
 
+        @Override
+        public String toString() {
+            StringBuilder b = new StringBuilder();
+            b.append("StandardFile [");
+            b.append(file.getName());
+            b.append("]");
+            return b.toString();
+        }
+
     }
 
     private AbstractFile sort() throws IOException {
@@ -604,6 +613,7 @@ public final class Sorter<T> {
 
     private AbstractFile mergeGroup(FileSystem fs, List<AbstractFile> list, AbstractFile output)
             throws IOException {
+        System.out.println("list=" + list);
         log("merging %s files", list.size());
         if (list.size() == 1) {
             return list.get(0);
