@@ -22,6 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.function.Consumer;
@@ -34,6 +35,7 @@ import java.util.stream.Stream;
 // is java.util.ArrayList but with an extra parallelSort method that is more memory efficient 
 // that can be achieved outside the class
 import com.github.davidmoten.bigsorter.internal.ArrayList;
+import com.github.davidmoten.bigsorter.internal.ReaderFromIterator;
 import com.github.davidmoten.guavamini.Lists;
 import com.github.davidmoten.guavamini.Preconditions;
 import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
@@ -44,7 +46,7 @@ import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 // and sort() in one thread, don't seek to reuse the same Sorter object. 
 public final class Sorter<T> {
 
-    private final List<Supplier<? extends InputStream>> inputs;
+    private final List<Supplier<? extends Reader<? extends T>>> inputs;
     private final Serializer<T> serializer;
     private final File output;
     private final Comparator<? super T> comparator;
@@ -53,21 +55,17 @@ public final class Sorter<T> {
     private final Consumer<? super String> log;
     private final int bufferSize;
     private final File tempDirectory;
-    private final Function<? super Reader<T>, ? extends Reader<? extends T>> transform;
     private final boolean unique;
     private final boolean initialSortInParallel;
     private long count = 0;
-    
 
-    Sorter(List<Supplier<? extends InputStream>> inputs, Serializer<T> serializer, File output,
+    Sorter(List<Supplier<? extends Reader<? extends T>>> inputs, Serializer<T> serializer, File output,
             Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log,
-            int bufferSize, File tempDirectory, Function<? super Reader<T>, ? extends Reader<? extends T>> transform,
-            boolean unique, boolean initialSortInParallel) {
+            int bufferSize, File tempDirectory, boolean unique, boolean initialSortInParallel) {
         Preconditions.checkNotNull(inputs, "inputs cannot be null");
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
         Preconditions.checkNotNull(output, "output cannot be null");
         Preconditions.checkNotNull(comparator, "comparator cannot be null");
-        Preconditions.checkNotNull(transform, "transform cannot be null");
         this.inputs = inputs;
         this.serializer = serializer;
         this.output = output;
@@ -77,7 +75,6 @@ public final class Sorter<T> {
         this.log = log;
         this.bufferSize = bufferSize;
         this.tempDirectory = tempDirectory;
-        this.transform = transform;
         this.unique = unique;
         this.initialSortInParallel = initialSortInParallel;
     }
@@ -102,11 +99,25 @@ public final class Sorter<T> {
     public static <T> Builder2<String> linesUtf8() {
         return serializer(Serializer.linesUtf8()).comparator(Comparator.naturalOrder());
     }
+    
+    private enum SourceType {
+        SUPPLIER_INPUT_STREAM, SUPPLIER_READER
+    }
+    
+    private static final class Source {
+        final SourceType type;
+        final Object source;
+
+        Source(SourceType type, Object source) {
+            this.type = type;
+            this.source = source;
+        }
+    }
 
     public static final class Builder<T> {
         private static final DateTimeFormatter DATE_TIME_PATTERN = DateTimeFormatter
                 .ofPattern("yyyy-MM-dd HH:mm:ss.Sxxxx");
-        private List<Supplier<? extends InputStream>> inputs = Lists.newArrayList();
+        private List<Source> inputs = Lists.newArrayList();
         private final Serializer<T> serializer;
         private File output;
         private Comparator<? super T> comparator;
@@ -175,6 +186,7 @@ public final class Sorter<T> {
             Preconditions.checkNotNull(files, "files cannot be null");
             return inputStreams(files //
                     .stream() //
+                    
                     .map(file -> supplier(file)) //
                     .collect(Collectors.toList()));
         }
@@ -182,9 +194,31 @@ public final class Sorter<T> {
         public Builder3<T> inputStreams(List<? extends Supplier<? extends InputStream>> inputs) {
             Preconditions.checkNotNull(inputs);
             for (Supplier<? extends InputStream> input: inputs) {
-                b.inputs.add(input);
+                b.inputs.add(new Source(SourceType.SUPPLIER_INPUT_STREAM, input));
             }
             return new Builder3<T>(b);
+        }
+        
+        public Builder3<T> readers(List<? extends Supplier<? extends Reader<? extends T>>> readers) {
+            Preconditions.checkNotNull(readers);
+            for (Supplier<? extends Reader<? extends T>> input: readers) {
+                b.inputs.add(new Source(SourceType.SUPPLIER_READER, input));
+            }
+            return new Builder3<T>(b);
+        }
+        
+        public Builder3<T> inputItems(@SuppressWarnings("unchecked") T... items) {
+            return inputItems(Arrays.asList(items));
+        }
+        
+        public Builder3<T> inputItems(Iterable<? extends T> iterable) {
+            Supplier<? extends Reader<? extends T>> supplier = () -> new ReaderFromIterator<T>(iterable.iterator());
+            return readers(Collections.singletonList(supplier));
+        }
+        
+        public Builder3<T> inputItems(Iterator<? extends T> iterator) {
+            Supplier<? extends Reader<? extends T>> supplier = () -> new ReaderFromIterator<T>(iterator);
+            return readers(Collections.singletonList(supplier));
         }
         
         private Supplier<InputStream> supplier(File file) {
@@ -346,9 +380,9 @@ public final class Sorter<T> {
          * {@link UncheckedIOException}.
          */
         public void sort() {
-            Sorter<T> sorter = new Sorter<T>(b.inputs, b.serializer, b.output, b.comparator,
+            Sorter<T> sorter = new Sorter<T>(inputs(b), b.serializer, b.output, b.comparator,
                     b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                    b.transform, b.unique, b.initialSortInParallel);
+                    b.unique, b.initialSortInParallel);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -357,6 +391,24 @@ public final class Sorter<T> {
             }
         }
 
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> List<Supplier<? extends Reader<? extends T>>> inputs(Builder<T> b) {
+        return b.inputs //
+                .stream() //
+                .map(source -> {
+                    if (source.type == SourceType.SUPPLIER_INPUT_STREAM) {
+                        return (Supplier<? extends Reader<? extends T>>) //
+                        (() -> b.transform //
+                                .apply(b.serializer.createReader(
+                                        ((Supplier<? extends InputStream>) source.source).get())));
+                    } else { // Supplier of a Reader
+                        return (Supplier<? extends Reader<? extends T>>) 
+                                (() -> b.transform //
+                                        .apply(((Supplier<Reader<T>>) source.source).get()));
+                    }
+                }).collect(Collectors.toList());
     }
     
     public static final class Builder5<T> {
@@ -385,9 +437,9 @@ public final class Sorter<T> {
         public Stream<T> sort() {
             try {
                 b.output = nextTempFile(b.tempDirectory);
-                Sorter<T> sorter = new Sorter<T>(b.inputs, b.serializer, b.output, b.comparator,
+                Sorter<T> sorter = new Sorter<T>(inputs(b), b.serializer, b.output, b.comparator,
                         b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                        b.transform, b.unique, b.initialSortInParallel);
+                        b.unique, b.initialSortInParallel);
                 sorter.sort();
                 return b.serializer //
                         .createReader(b.output) //
@@ -411,7 +463,12 @@ public final class Sorter<T> {
             log.accept(s);
         }
     }
-
+    
+    @FunctionalInterface
+    private static interface CloseAction {
+        void close() throws IOException;
+    }
+    
     private File sort() throws IOException {
 
         tempDirectory.mkdirs();
@@ -425,9 +482,8 @@ public final class Sorter<T> {
         
         int i = 0;
         ArrayList<T> list = new ArrayList<>();
-        for (Supplier<? extends InputStream> supplier: inputs) {
-            try (InputStream in = supplier.get();
-                    Reader<? extends T> reader = transform.apply(serializer.createReader(in))) {
+        for (Supplier<? extends Reader<? extends T>> supplier: inputs) {
+            try (Reader<? extends T> reader = supplier.get()) {
                 while (true) {
                     T t = reader.read();
                     if (t != null) {

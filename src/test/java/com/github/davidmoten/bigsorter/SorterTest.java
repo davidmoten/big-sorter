@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -742,12 +743,61 @@ public class SorterTest {
 
     @Test(expected = UncheckedIOException.class)
     public void testMergeFileWhenDoesNotExist() {
-        List<Supplier<? extends InputStream>> list = Collections.singletonList(() ->  
-                new ByteArrayInputStream(new byte[0]));
+        List<Supplier<? extends Reader<? extends String>>> list = Collections.singletonList(() ->  
+                emptyReader());
         Sorter<String> sorter = new Sorter<String>(list, Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
-                }, 8192, new File(System.getProperty("java.io.tmpdir")), r -> r, false, false);
+                }, 8192, new File(System.getProperty("java.io.tmpdir")), false, false);
         sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
+    }
+    
+    @Test
+    public void testSortOfItems() {
+        List<String> list = Sorter.serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder()) //
+                .inputItems("bbb", "aaa", "ddd", "ccc") //
+                .outputAsStream() //
+                .sort() //
+                .collect(Collectors.toList());
+        assertEquals(Arrays.asList("aaa", "bbb", "ccc", "ddd"), list);
+    }
+    
+    @Test
+    public void testSortOfList() {
+        List<String> list = Sorter.serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder()) //
+                .inputItems(Arrays.asList("bbb", "aaa", "ddd", "ccc")) //
+                .outputAsStream() //
+                .sort() //
+                .collect(Collectors.toList());
+        assertEquals(Arrays.asList("aaa", "bbb", "ccc", "ddd"), list);
+    }
+    
+    @Test
+    public void testSortOfIterator() {
+        List<String> list = Sorter.serializerLinesUtf8() //
+                .comparator(Comparator.naturalOrder()) //
+                .inputItems(Arrays.asList("bbb", "aaa", "ddd", "ccc").iterator()) //
+                .outputAsStream() //
+                .sort() //
+                .collect(Collectors.toList());
+        assertEquals(Arrays.asList("aaa", "bbb", "ccc", "ddd"), list);
+    }
+    
+    private static Reader<String> emptyReader() {
+        return new Reader<String>() {
+
+            @Override
+            public void close() throws IOException {
+               // do nothing
+            }
+
+            @Override
+            public String read() throws IOException {
+                return null;
+            }
+            
+        };
     }
 
     @Test(expected=RuntimeException.class)
