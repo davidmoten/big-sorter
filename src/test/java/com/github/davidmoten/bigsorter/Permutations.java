@@ -14,9 +14,7 @@ public class Permutations {
     public static <T> void forEach(List<List<T>> lists,
             Consumer<? super List<? extends T>> consumer) {
         List<Integer> indexes = new ArrayList<>();
-        for (List<T> x : lists) {
-            indexes.add(0);
-        }
+        lists.forEach(x -> indexes.add(0));
         report(lists, consumer, indexes);
         while (true) {
             int i = indexes.size() - 1;
