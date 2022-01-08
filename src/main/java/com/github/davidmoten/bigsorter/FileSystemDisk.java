@@ -49,4 +49,9 @@ public final class FileSystemDisk implements FileSystem {
 		file.delete();
 	}
 
+	@Override
+	public void mkdirs(File directory) {
+		directory.mkdirs();
+	}
+
 }

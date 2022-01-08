@@ -1,9 +1,7 @@
 package com.github.davidmoten.bigsorter;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,8 +9,6 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -472,10 +468,6 @@ public final class Sorter<T> {
 
     }
     
-    static InputStream openFile(File file, int bufferSize) throws FileNotFoundException {
-        return new BufferedInputStream(new FileInputStream(file), bufferSize);
-    }
-
     private void log(String msg, Object... objects) {
         if (log != null) {
             String s = String.format(msg, objects);
@@ -490,7 +482,7 @@ public final class Sorter<T> {
     
     private File sort() throws IOException {
 
-        tempDirectory.mkdirs();
+    	fileSystem.mkdirs(tempDirectory);
 
         // read the input into sorted small files
         long time = System.currentTimeMillis();
@@ -526,11 +518,7 @@ public final class Sorter<T> {
         log("completed initial split and sort, starting merge, elapsed time="
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
         File result = merge(files);
-        Files.move( //
-                result.toPath(), //
-                output.toPath(), //
-                StandardCopyOption.ATOMIC_MOVE, //
-                StandardCopyOption.REPLACE_EXISTING);
+        fileSystem.move(result, output);
         log("sort of " + count + " records completed in "
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
         return output;

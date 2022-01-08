@@ -16,5 +16,7 @@ public interface FileSystem {
 	void move(File a, File b) throws IOException;
 	
 	void delete(File file) throws IOException;
+
+	void mkdirs(File directory);
 	
 }
