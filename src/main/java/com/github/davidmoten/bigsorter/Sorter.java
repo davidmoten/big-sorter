@@ -519,7 +519,7 @@ public final class Sorter<T> {
 
     @VisibleForTesting
     File merge(List<File> files) {
-        // merge the files in chunks repeatededly until only one remains
+        // merge the files in chunks repeatedly until only one remains
         // TODO make a better guess at the chunk size so groups are more even
         try {
             while (files.size() > 1) {
