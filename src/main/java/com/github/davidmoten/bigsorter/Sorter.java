@@ -388,7 +388,12 @@ public final class Sorter<T> {
             try {
                 sorter.sort();
             } catch (IOException e) {
-                b.output.delete();
+                try {
+					b.fileSystem.delete(b.output);
+				} catch (IOException e1) {
+					//TODO report a composite exception?
+					e1.printStackTrace();
+				}
                 throw new UncheckedIOException(e);
             }
         }
@@ -437,8 +442,8 @@ public final class Sorter<T> {
          * @return stream that on close deletes the output file of the sort
          */
         public Stream<T> sort() {
+        	b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
             try {
-            	b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
                 b.output = b.fileSystem.nextTempFile(b.tempDirectory);
                 Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
                         b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory,
@@ -447,9 +452,20 @@ public final class Sorter<T> {
                 return b.serializer //
                         .createReader(b.output) //
                         .stream() //
-                        .onClose(() -> b.output.delete());
+                        .onClose(() -> {
+							try {
+								b.fileSystem.delete(b.output);
+							} catch (IOException e) {
+								throw new UncheckedIOException(e);
+							}
+						});
             } catch (Throwable e) {
-                b.output.delete();
+                try {
+					b.fileSystem.delete(b.output);
+				} catch (IOException e1) {
+					// TODO throw a composite exception?
+					e1.printStackTrace();
+				}
                 throw Util.toRuntimeException(e);
             } 
         }
@@ -536,8 +552,8 @@ public final class Sorter<T> {
             }
             File result;
             if (files.isEmpty()) {
-                output.delete();
-                output.createNewFile();
+            	fileSystem.delete(output);
+            	fileSystem.outputStream(output).close();
                 result = output;
             } else {
                 result = files.get(0);
@@ -578,7 +594,7 @@ public final class Sorter<T> {
                     q.offer(state);
                 } else {
                     // delete intermediate files
-                    state.file.delete();
+                    fileSystem.delete(state.file);
                 }
             }
             // TODO if an IOException occurs then we should attempt to close and delete

@@ -44,4 +44,9 @@ public final class FileSystemDisk implements FileSystem {
 		return new BufferedInputStream(new FileInputStream(file), bufferSize);
 	}
 
+	@Override
+	public void delete(File file) throws IOException {
+		file.delete();
+	}
+
 }
