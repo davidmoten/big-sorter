@@ -1,12 +1,10 @@
 package com.github.davidmoten.bigsorter;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -46,6 +44,7 @@ import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 // and sort() in one thread, don't seek to reuse the same Sorter object. 
 public final class Sorter<T> {
 
+	private final FileSystem fileSystem;
     private final List<Supplier<? extends Reader<? extends T>>> inputs;
     private final Serializer<T> serializer;
     private final File output;
@@ -53,19 +52,20 @@ public final class Sorter<T> {
     private final int maxFilesPerMerge;
     private final int maxItemsPerPart;
     private final Consumer<? super String> log;
-    private final int bufferSize;
     private final File tempDirectory;
     private final boolean unique;
     private final boolean initialSortInParallel;
     private long count = 0;
 
-    Sorter(List<Supplier<? extends Reader<? extends T>>> inputs, Serializer<T> serializer, File output,
+    Sorter(FileSystem fileSystem, List<Supplier<? extends Reader<? extends T>>> inputs, Serializer<T> serializer, File output,
             Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log,
-            int bufferSize, File tempDirectory, boolean unique, boolean initialSortInParallel) {
+            File tempDirectory, boolean unique, boolean initialSortInParallel) {
+    	Preconditions.checkNotNull(fileSystem, "fileSystem cannot be null");
         Preconditions.checkNotNull(inputs, "inputs cannot be null");
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
         Preconditions.checkNotNull(output, "output cannot be null");
         Preconditions.checkNotNull(comparator, "comparator cannot be null");
+        this.fileSystem = fileSystem;
         this.inputs = inputs;
         this.serializer = serializer;
         this.output = output;
@@ -73,7 +73,6 @@ public final class Sorter<T> {
         this.maxFilesPerMerge = maxFilesPerMerge;
         this.maxItemsPerPart = maxItemsPerFile;
         this.log = log;
-        this.bufferSize = bufferSize;
         this.tempDirectory = tempDirectory;
         this.unique = unique;
         this.initialSortInParallel = initialSortInParallel;
@@ -129,6 +128,8 @@ public final class Sorter<T> {
         private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
         private boolean unique;
         private boolean initialSortInParallel;
+        private Function<Integer, FileSystem> fileSystemSupplier = bufferSize -> new FileSystemDisk(bufferSize);
+        private FileSystem fileSystem = null;
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
@@ -224,8 +225,8 @@ public final class Sorter<T> {
         private Supplier<InputStream> supplier(File file) {
             return () -> {
                 try {
-                    return openFile(file, b.bufferSize);
-                } catch (FileNotFoundException e) {
+                    return b.fileSystem.inputStream(file);
+                } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             };
@@ -274,7 +275,7 @@ public final class Sorter<T> {
             b.transform = r -> ((Reader<T>) currentTransform.apply(r)).transform(transform);
             return this;
         }
-
+        
         public Builder4<T> output(File output) {
             Preconditions.checkNotNull(output, "output cannot be null");
             b.output = output;
@@ -380,8 +381,9 @@ public final class Sorter<T> {
          * {@link UncheckedIOException}.
          */
         public void sort() {
-            Sorter<T> sorter = new Sorter<T>(inputs(b), b.serializer, b.output, b.comparator,
-                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
+        	b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
+            Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
+                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory,
                     b.unique, b.initialSortInParallel);
             try {
                 sorter.sort();
@@ -436,9 +438,10 @@ public final class Sorter<T> {
          */
         public Stream<T> sort() {
             try {
-                b.output = nextTempFile(b.tempDirectory);
-                Sorter<T> sorter = new Sorter<T>(inputs(b), b.serializer, b.output, b.comparator,
-                        b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
+            	b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
+                b.output = b.fileSystem.nextTempFile(b.tempDirectory);
+                Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
+                        b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory,
                         b.unique, b.initialSortInParallel);
                 sorter.sort();
                 return b.serializer //
@@ -558,7 +561,7 @@ public final class Sorter<T> {
             states.add(st);
         }
         File output = nextTempFile();
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(output), bufferSize);
+        try (OutputStream out = fileSystem.outputStream(output);
                 Writer<T> writer = serializer.createWriter(out)) {
             PriorityQueue<State<T>> q = new PriorityQueue<>(
                     (x, y) -> comparator.compare(x.value, y.value));
@@ -585,7 +588,7 @@ public final class Sorter<T> {
     }
 
     private State<T> createState(File f) throws IOException {
-        InputStream in = openFile(f, bufferSize);
+        InputStream in = fileSystem.inputStream(f);
         Reader<T> reader = serializer.createReader(in);
         T t = reader.readAutoClosing();
         return new State<T>(f, reader, t);
@@ -623,7 +626,7 @@ public final class Sorter<T> {
     }
 
     private void writeToFile(List<T> list, File f) throws FileNotFoundException, IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f), bufferSize);
+        try (OutputStream out = fileSystem.outputStream(f);
                 Writer<T> writer = serializer.createWriter(out)) {
             T last = null;
             for (T t : list) {
@@ -636,11 +639,7 @@ public final class Sorter<T> {
     }
 
     private File nextTempFile() throws IOException {
-        return nextTempFile(tempDirectory);
-    }
-    
-    private static File nextTempFile(File tempDirectory) throws IOException {
-        return File.createTempFile("big-sorter", "", tempDirectory);
+        return fileSystem.nextTempFile(tempDirectory);
     }
 
 }

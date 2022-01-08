@@ -745,9 +745,10 @@ public class SorterTest {
     public void testMergeFileWhenDoesNotExist() {
         List<Supplier<? extends Reader<? extends String>>> list = Collections.singletonList(() ->  
                 emptyReader());
-        Sorter<String> sorter = new Sorter<String>(list, Serializer.linesUtf8(),
+        FileSystemDisk fs = new FileSystemDisk(8192);
+        Sorter<String> sorter = new Sorter<String>(fs, list, Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
-                }, 8192, new File(System.getProperty("java.io.tmpdir")), false, false);
+                }, new File(System.getProperty("java.io.tmpdir")), false, false);
         sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
     }
     
