@@ -519,6 +519,8 @@ public final class Sorter<T> {
 		log("completed initial split and sort, starting merge, elapsed time="
 				+ (System.currentTimeMillis() - time) / 1000.0 + "s");
 		if (files.size() == 1) {
+			// this move action will only occur when the data to be sorted is small enough to be 
+			// sorted completely in memory (so this action won't in general be expensive).
 			fileSystem.move(files.get(0), output);
 		} else {
 			merge(files);
