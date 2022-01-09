@@ -1,4 +1,4 @@
-package com.github.davidmoten.bigsorter;
+package com.github.davidmoten.bigsorter.internal;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -11,6 +11,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+
+import com.github.davidmoten.bigsorter.FileSystem;
 
 public final class FileSystemDisk implements FileSystem {
 	

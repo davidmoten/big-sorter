@@ -41,6 +41,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.davidmoten.bigsorter.internal.FileSystemDisk;
 import com.github.davidmoten.guavamini.Lists;
 
 public class SorterTest {

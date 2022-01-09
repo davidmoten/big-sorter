@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 // is java.util.ArrayList but with an extra parallelSort method that is more memory efficient 
 // that can be achieved outside the class
 import com.github.davidmoten.bigsorter.internal.ArrayList;
+import com.github.davidmoten.bigsorter.internal.FileSystemDisk;
 import com.github.davidmoten.bigsorter.internal.ReaderFromIterator;
 import com.github.davidmoten.guavamini.Lists;
 import com.github.davidmoten.guavamini.Preconditions;
@@ -525,7 +526,6 @@ public final class Sorter<T> {
 		} else {
 			merge(files);
 		}
-//        fileSystem.move(result, output);
 		log("sort of " + count + " records completed in " + (System.currentTimeMillis() - time) / 1000.0 + "s");
 		return output;
 	}
