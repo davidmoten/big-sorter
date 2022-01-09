@@ -79,10 +79,17 @@ public final class FileSystemS3 implements FileSystem {
 
 	@Override
 	public void mkdirs(File directory) {
-		String xml = Xml.create("CreateBucketConfiguration").a("xmlns", "http://s3.amazonaws.com/doc/2006-03-01/")
+		String xml = Xml //
+				.create("CreateBucketConfiguration") //
+				.a("xmlns", "http://s3.amazonaws.com/doc/2006-03-01/") //
 				.e("LocationConstraint") //
-				.content(region).toString();
-		s3.path(directory.getName()).method(HttpMethod.PUT).requestBody(xml).execute();
+				.content(region) //
+				.toString();
+		s3 //
+				.path(directory.getName()) //
+				.method(HttpMethod.PUT) //
+				.requestBody(xml) //
+				.execute();
 	}
 
 }
