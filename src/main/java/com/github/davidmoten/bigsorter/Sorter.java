@@ -269,381 +269,383 @@ public final class Sorter<T> {
             Preconditions.checkNotNull(transform, "transform cannot be null");
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
             b.transform = r -> ((Reader<T>) currentTransform.apply(r)).transform(transform);
-            return this;
-        }
-        
-        public Builder4<T> output(File output) {
-            Preconditions.checkNotNull(output, "output cannot be null");
-            b.output = output;
-            return new Builder4<T>(b);
-        }
-        
-        public Builder5<T> outputAsStream() {
-            return new Builder5<T>(b);
-        }
+			return this;
+		}
 
-    }
-    
-    public static class Builder4Base<T, S extends Builder4Base<T, S>> {
-        protected final Builder<T> b;
+		public Builder4<T> output(File output) {
+			Preconditions.checkNotNull(output, "output cannot be null");
+			b.output = output;
+			return new Builder4<T>(b);
+		}
 
-        Builder4Base(Builder<T> b) {
-            this.b = b;
-        }
+		public Builder5<T> outputAsStream() {
+			return new Builder5<T>(b);
+		}
 
-        @SuppressWarnings("unchecked")
-        public S maxFilesPerMerge(int value) {
-            Preconditions.checkArgument(value > 1, "maxFilesPerMerge must be greater than 1");
-            b.maxFilesPerMerge = value;
-            return (S) this;
-        }
+	}
 
-        /**
-         * Sets the number of items in each file for the initial split. Default is 100_000.
-         * @param value the number of items in each file for the initial split
-         * @return this
-         */
-        @SuppressWarnings("unchecked")
-        public S maxItemsPerFile(int value) {
-            Preconditions.checkArgument(value > 0, "maxItemsPerFile must be greater than 0");
-            b.maxItemsPerFile = value;
-            return (S) this;
-        }
-        
-        @SuppressWarnings("unchecked")
-        public S unique(boolean value) {
-            b.unique = value;
-            return (S) this;
-        }
-        
-        public S unique() {
-            return unique(true);
-        }
-        
-        @SuppressWarnings("unchecked")
-        public S initialSortInParallel(boolean initialSortInParallel) {
-            b.initialSortInParallel = initialSortInParallel;
-            return (S) this;
-        }
-        
-        public S initialSortInParallel() {
-            return initialSortInParallel(true);
-        }
+	public static class Builder4Base<T, S extends Builder4Base<T, S>> {
+		protected final Builder<T> b;
 
-        @SuppressWarnings("unchecked")
-        public S logger(Consumer<? super String> logger) {
-            Preconditions.checkNotNull(logger, "logger cannot be null");
-            b.logger = logger;
-            return (S) this;
-        }
+		Builder4Base(Builder<T> b) {
+			this.b = b;
+		}
 
-        public S loggerStdOut() {
-            return logger(new Consumer<String>() {
+		@SuppressWarnings("unchecked")
+		public S maxFilesPerMerge(int value) {
+			Preconditions.checkArgument(value > 1, "maxFilesPerMerge must be greater than 1");
+			b.maxFilesPerMerge = value;
+			return (S) this;
+		}
 
-                @Override
-                public void accept(String msg) {
-                    System.out.println(ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)
-                            .format(Builder.DATE_TIME_PATTERN) + " " + msg);
-                }
-            });
-        }
+		/**
+		 * Sets the number of items in each file for the initial split. Default is
+		 * 100_000.
+		 * 
+		 * @param value the number of items in each file for the initial split
+		 * @return this
+		 */
+		@SuppressWarnings("unchecked")
+		public S maxItemsPerFile(int value) {
+			Preconditions.checkArgument(value > 0, "maxItemsPerFile must be greater than 0");
+			b.maxItemsPerFile = value;
+			return (S) this;
+		}
 
-        @SuppressWarnings("unchecked")
-        public S bufferSize(int bufferSize) {
-            Preconditions.checkArgument(bufferSize > 0, "bufferSize must be greater than 0");
-            b.bufferSize = bufferSize;
-            return (S) this;
-        }
+		@SuppressWarnings("unchecked")
+		public S unique(boolean value) {
+			b.unique = value;
+			return (S) this;
+		}
 
-        @SuppressWarnings("unchecked")
-        public S tempDirectory(File directory) {
-            Preconditions.checkNotNull(directory, "tempDirectory cannot be null");
-            b.tempDirectory = directory;
-            return (S) this;
-        }
-        
-    }
+		public S unique() {
+			return unique(true);
+		}
 
+		@SuppressWarnings("unchecked")
+		public S initialSortInParallel(boolean initialSortInParallel) {
+			b.initialSortInParallel = initialSortInParallel;
+			return (S) this;
+		}
 
-    public static final class Builder4<T> extends Builder4Base<T, Builder4<T>> {
+		public S initialSortInParallel() {
+			return initialSortInParallel(true);
+		}
 
-        Builder4(Builder<T> b) {
-            super(b);
-        }
+		@SuppressWarnings("unchecked")
+		public S logger(Consumer<? super String> logger) {
+			Preconditions.checkNotNull(logger, "logger cannot be null");
+			b.logger = logger;
+			return (S) this;
+		}
 
-        /**
-         * Sorts the input and writes the result to the given output file. If an
-         * {@link IOException} occurs then it is thrown wrapped in
-         * {@link UncheckedIOException}.
-         */
-        public void sort() {
-        	b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
-            Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
-                    b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory,
-                    b.unique, b.initialSortInParallel);
-            try {
-                sorter.sort();
-            } catch (IOException e) {
-                try {
+		public S loggerStdOut() {
+			return logger(new Consumer<String>() {
+
+				@Override
+				public void accept(String msg) {
+					System.out.println(
+							ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS).format(Builder.DATE_TIME_PATTERN) + " "
+									+ msg);
+				}
+			});
+		}
+
+		@SuppressWarnings("unchecked")
+		public S bufferSize(int bufferSize) {
+			Preconditions.checkArgument(bufferSize > 0, "bufferSize must be greater than 0");
+			b.bufferSize = bufferSize;
+			return (S) this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public S tempDirectory(File directory) {
+			Preconditions.checkNotNull(directory, "tempDirectory cannot be null");
+			b.tempDirectory = directory;
+			return (S) this;
+		}
+
+	}
+
+	public static final class Builder4<T> extends Builder4Base<T, Builder4<T>> {
+
+		Builder4(Builder<T> b) {
+			super(b);
+		}
+
+		/**
+		 * Sorts the input and writes the result to the given output file. If an
+		 * {@link IOException} occurs then it is thrown wrapped in
+		 * {@link UncheckedIOException}.
+		 */
+		public void sort() {
+			b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
+			Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
+					b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory, b.unique,
+					b.initialSortInParallel);
+			try {
+				sorter.sort();
+			} catch (IOException e) {
+				try {
 					b.fileSystem.delete(b.output);
 				} catch (IOException e1) {
-					//TODO report a composite exception?
+					// TODO report a composite exception?
 					e1.printStackTrace();
 				}
-                throw new UncheckedIOException(e);
-            }
-        }
+				throw new UncheckedIOException(e);
+			}
+		}
 
-    }
+	}
 
-    @SuppressWarnings("unchecked")
-    private static <T> List<Supplier<? extends Reader<? extends T>>> inputs(Builder<T> b) {
-        return b.inputs //
-                .stream() //
-                .map(source -> {
-                    if (source.type == SourceType.SUPPLIER_INPUT_STREAM) {
-                        return (Supplier<? extends Reader<? extends T>>) //
-                        (() -> b.transform //
-                                .apply(b.serializer.createReader(
-                                        ((Supplier<? extends InputStream>) source.source).get())));
-                    } else { // Supplier of a Reader
-                        return (Supplier<? extends Reader<? extends T>>) 
-                                (() -> b.transform //
-                                        .apply(((Supplier<Reader<T>>) source.source).get()));
-                    }
-                }).collect(Collectors.toList());
-    }
-    
-    public static final class Builder5<T> {
+	@SuppressWarnings("unchecked")
+	private static <T> List<Supplier<? extends Reader<? extends T>>> inputs(Builder<T> b) {
+		return b.inputs //
+				.stream() //
+				.map(source -> {
+					if (source.type == SourceType.SUPPLIER_INPUT_STREAM) {
+						return (Supplier<? extends Reader<? extends T>>) //
+						(() -> b.transform //
+								.apply(b.serializer
+										.createReader(((Supplier<? extends InputStream>) source.source).get())));
+					} else { // Supplier of a Reader
+						return (Supplier<? extends Reader<? extends T>>) (() -> b.transform //
+								.apply(((Supplier<Reader<T>>) source.source).get()));
+					}
+				}).collect(Collectors.toList());
+	}
 
-        private final Builder<T> b;
+	public static final class Builder5<T> {
 
-        Builder5(Builder<T> b) {
-            this.b = b;
-        }
+		private final Builder<T> b;
 
-        /**
-         * Sorts the input and writes the result to the output file. The items in the
-         * output file are returned as a Stream. The Stream must be closed (it is
-         * AutoCloseable) to avoid consuming unnecessary disk space with many calls.
-         * When the Stream is closed the output file is deleted. When a
-         * {@link IOException} occurs it is thrown wrapped in a
-         * {@link UncheckedIOException}.
-         * 
-         * <p>
-         * Note that a terminal operation (like {@code .count()} for example) does NOT
-         * close the Stream. You should assign the Stream to a variable in a
-         * try-catch-with-resources block to ensure the output file is deleted.
-         * 
-         * @return stream that on close deletes the output file of the sort
-         */
-        public Stream<T> sort() {
-        	b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
-            try {
-                b.output = b.fileSystem.nextTempFile(b.tempDirectory);
-                Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
-                        b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory,
-                        b.unique, b.initialSortInParallel);
-                sorter.sort();
-                return b.serializer //
-                        .createReader(b.output) //
-                        .stream() //
-                        .onClose(() -> {
+		Builder5(Builder<T> b) {
+			this.b = b;
+		}
+
+		/**
+		 * Sorts the input and writes the result to the output file. The items in the
+		 * output file are returned as a Stream. The Stream must be closed (it is
+		 * AutoCloseable) to avoid consuming unnecessary disk space with many calls.
+		 * When the Stream is closed the output file is deleted. When a
+		 * {@link IOException} occurs it is thrown wrapped in a
+		 * {@link UncheckedIOException}.
+		 * 
+		 * <p>
+		 * Note that a terminal operation (like {@code .count()} for example) does NOT
+		 * close the Stream. You should assign the Stream to a variable in a
+		 * try-catch-with-resources block to ensure the output file is deleted.
+		 * 
+		 * @return stream that on close deletes the output file of the sort
+		 */
+		public Stream<T> sort() {
+			b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
+			try {
+				b.output = b.fileSystem.nextTempFile(b.tempDirectory);
+				Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
+						b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory, b.unique,
+						b.initialSortInParallel);
+				sorter.sort();
+				return b.serializer //
+						.createReader(b.output) //
+						.stream() //
+						.onClose(() -> {
 							try {
 								b.fileSystem.delete(b.output);
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}
 						});
-            } catch (Throwable e) {
-                try {
+			} catch (Throwable e) {
+				try {
 					b.fileSystem.delete(b.output);
 				} catch (IOException e1) {
 					// TODO throw a composite exception?
 					e1.printStackTrace();
 				}
-                throw Util.toRuntimeException(e);
-            } 
-        }
+				throw Util.toRuntimeException(e);
+			}
+		}
 
-    }
-    
-    private void log(String msg, Object... objects) {
-        if (log != null) {
-            String s = String.format(msg, objects);
-            log.accept(s);
-        }
-    }
-    
-    @FunctionalInterface
-    private static interface CloseAction {
-        void close() throws IOException;
-    }
-    
-    private File sort() throws IOException {
+	}
 
-    	fileSystem.mkdirs(tempDirectory);
+	private void log(String msg, Object... objects) {
+		if (log != null) {
+			String s = String.format(msg, objects);
+			log.accept(s);
+		}
+	}
 
-        // read the input into sorted small files
-        long time = System.currentTimeMillis();
-        count = 0;
-        List<File> files = new ArrayList<>();
-        log("starting sort");
-        log("unique = " + unique);
-        
-        int i = 0;
-        ArrayList<T> list = new ArrayList<>();
-        for (Supplier<? extends Reader<? extends T>> supplier: inputs) {
-            try (Reader<? extends T> reader = supplier.get()) {
-                while (true) {
-                    T t = reader.read();
-                    if (t != null) {
-                        list.add(t);
-                        i++;
-                    }
-                    if (t == null || i == maxItemsPerPart) {
-                        i = 0;
-                        if (list.size() > 0) {
-                            File f = sortAndWriteToFile(list);
-                            files.add(f);
-                            list.clear();
-                        }
-                    }
-                    if (t == null) {
-                        break;
-                    }
-                }
-            }
-        }
-        log("completed initial split and sort, starting merge, elapsed time="
-                + (System.currentTimeMillis() - time) / 1000.0 + "s");
-        File result = merge(files);
-        fileSystem.move(result, output);
-        log("sort of " + count + " records completed in "
-                + (System.currentTimeMillis() - time) / 1000.0 + "s");
-        return output;
-    }
+	@FunctionalInterface
+	private static interface CloseAction {
+		void close() throws IOException;
+	}
 
-    @VisibleForTesting
-    File merge(List<File> files) {
-        // merge the files in chunks repeatedly until only one remains
-        // TODO make a better guess at the chunk size so groups are more even
-        try {
-            while (files.size() > 1) {
-                List<File> nextRound = new ArrayList<>();
-                for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
-                    File merged = mergeGroup(
-                            files.subList(i, Math.min(files.size(), i + maxFilesPerMerge)));
-                    nextRound.add(merged);
-                }
-                files = nextRound;
-            }
-            File result;
-            if (files.isEmpty()) {
-            	fileSystem.delete(output);
-            	fileSystem.outputStream(output).close();
-                result = output;
-            } else {
-                result = files.get(0);
-            }
-            return result;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+	private File sort() throws IOException {
 
-    private File mergeGroup(List<File> list) throws IOException {
-        log("merging %s files", list.size());
-        if (list.size() == 1) {
-            return list.get(0);
-        }
-        List<State<T>> states = new ArrayList<>();
-        for (File f : list) {
-            State<T> st = createState(f);
-            // note that st.value will be present otherwise the file would be empty
-            // and an empty file would not be passed to this method
-            states.add(st);
-        }
-        File output = nextTempFile();
-        try (OutputStream out = fileSystem.outputStream(output);
-                Writer<T> writer = serializer.createWriter(out)) {
-            PriorityQueue<State<T>> q = new PriorityQueue<>(
-                    (x, y) -> comparator.compare(x.value, y.value));
-            q.addAll(states);
-            T last = null;
-            while (!q.isEmpty()) {
-                State<T> state = q.poll();
-                if (!unique || last == null || comparator.compare(state.value, last) != 0) {
-                    writer.write(state.value);
-                    last = state.value;
-                }
-                state.value = state.reader.readAutoClosing();
-                if (state.value != null) {
-                    q.offer(state);
-                } else {
-                    // delete intermediate files
-                    fileSystem.delete(state.file);
-                }
-            }
-            // TODO if an IOException occurs then we should attempt to close and delete
-            // temporary files
-        }
-        return output;
-    }
+		fileSystem.mkdirs(tempDirectory);
 
-    private State<T> createState(File f) throws IOException {
-        InputStream in = fileSystem.inputStream(f);
-        Reader<T> reader = serializer.createReader(in);
-        T t = reader.readAutoClosing();
-        return new State<T>(f, reader, t);
-    }
+		// read the input into sorted small files
+		long time = System.currentTimeMillis();
+		count = 0;
+		List<File> files = new ArrayList<>();
+		log("starting sort");
+		log("unique = " + unique);
 
-    private static final class State<T> {
-        final File file;
-        Reader<T> reader;
-        T value;
+		int i = 0;
+		ArrayList<T> list = new ArrayList<>();
+		for (Supplier<? extends Reader<? extends T>> supplier : inputs) {
+			try (Reader<? extends T> reader = supplier.get()) {
+				while (true) {
+					T t = reader.read();
+					if (t != null) {
+						list.add(t);
+						i++;
+					}
+					if (t == null || i == maxItemsPerPart) {
+						i = 0;
+						if (list.size() > 0) {
+							File f = sortAndWriteToFile(list);
+							files.add(f);
+							list.clear();
+						}
+					}
+					if (t == null) {
+						break;
+					}
+				}
+			}
+		}
+		log("completed initial split and sort, starting merge, elapsed time="
+				+ (System.currentTimeMillis() - time) / 1000.0 + "s");
+		if (files.size() == 1) {
+			fileSystem.move(files.get(0), output);
+		} else {
+			merge(files);
+		}
+//        fileSystem.move(result, output);
+		log("sort of " + count + " records completed in " + (System.currentTimeMillis() - time) / 1000.0 + "s");
+		return output;
+	}
 
-        State(File file, Reader<T> reader, T value) {
-            this.file = file;
-            this.reader = reader;
-            this.value = value;
-        }
-    }
+	@VisibleForTesting
+	void merge(List<File> files) {
+		// merge the files in chunks repeatedly until only one remains
+		// TODO make a better guess at the chunk size so groups are more even
+		try {
+			while (files.size() > 1) {
+				List<File> nextRound = new ArrayList<>();
+				for (int i = 0; i < files.size(); i += maxFilesPerMerge) {
+					final File toFile;
+					if (files.size() <= maxFilesPerMerge) {
+						toFile = output;
+					} else {
+						toFile = nextTempFile();
+					}
+					List<File> chunk = files.subList(i, Math.min(files.size(), i + maxFilesPerMerge));
+					File merged = mergeGroup(chunk, toFile);
+					nextRound.add(merged);
+				}
+				files = nextRound;
+			}
+			if (files.isEmpty()) {
+				fileSystem.delete(output);
+				fileSystem.outputStream(output).close();
+			} 
+			return;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 
-    private File sortAndWriteToFile(ArrayList<T> list) throws FileNotFoundException, IOException {
-        File file = nextTempFile();
-        long t = System.currentTimeMillis();
-        if (initialSortInParallel) {
-            list.parallelSort(comparator);
-        } else {
-            list.sort(comparator);
-        }
-        writeToFile(list, file);
-        DecimalFormat df = new DecimalFormat("0.000");
-        count += list.size();
-        log("total=%s, sorted %s records to file %s in %ss", //
-                count, //
-                list.size(), //
-                file.getName(), //
-                df.format((System.currentTimeMillis() - t) / 1000.0));
-        return file;
-    }
+	private File mergeGroup(List<File> list, File toFile) throws IOException {
+		log("merging %s files", list.size());
+		if (list.size() == 1) {
+			return list.get(0);
+		}
+		List<State<T>> states = new ArrayList<>();
+		for (File f : list) {
+			State<T> st = createState(f);
+			// note that st.value will be present otherwise the file would be empty
+			// and an empty file would not be passed to this method
+			states.add(st);
+		}
+		try (OutputStream out = fileSystem.outputStream(toFile); Writer<T> writer = serializer.createWriter(out)) {
+			PriorityQueue<State<T>> q = new PriorityQueue<>((x, y) -> comparator.compare(x.value, y.value));
+			q.addAll(states);
+			T last = null;
+			while (!q.isEmpty()) {
+				State<T> state = q.poll();
+				if (!unique || last == null || comparator.compare(state.value, last) != 0) {
+					writer.write(state.value);
+					last = state.value;
+				}
+				state.value = state.reader.readAutoClosing();
+				if (state.value != null) {
+					q.offer(state);
+				} else {
+					// delete intermediate files
+					fileSystem.delete(state.file);
+				}
+			}
+			// TODO if an IOException occurs then we should attempt to close and delete
+			// temporary files
+		}
+		return toFile;
+	}
 
-    private void writeToFile(List<T> list, File f) throws FileNotFoundException, IOException {
-        try (OutputStream out = fileSystem.outputStream(f);
-                Writer<T> writer = serializer.createWriter(out)) {
-            T last = null;
-            for (T t : list) {
-                if (!unique || last == null || comparator.compare(t, last) != 0) {
-                    writer.write(t);
-                    last = t;
-                }
-            }
-        }
-    }
+	private State<T> createState(File f) throws IOException {
+		InputStream in = fileSystem.inputStream(f);
+		Reader<T> reader = serializer.createReader(in);
+		T t = reader.readAutoClosing();
+		return new State<T>(f, reader, t);
+	}
 
-    private File nextTempFile() throws IOException {
-        return fileSystem.nextTempFile(tempDirectory);
-    }
+	private static final class State<T> {
+		final File file;
+		Reader<T> reader;
+		T value;
+
+		State(File file, Reader<T> reader, T value) {
+			this.file = file;
+			this.reader = reader;
+			this.value = value;
+		}
+	}
+
+	private File sortAndWriteToFile(ArrayList<T> list) throws FileNotFoundException, IOException {
+		File file = nextTempFile();
+		long t = System.currentTimeMillis();
+		if (initialSortInParallel) {
+			list.parallelSort(comparator);
+		} else {
+			list.sort(comparator);
+		}
+		writeToFile(list, file);
+		DecimalFormat df = new DecimalFormat("0.000");
+		count += list.size();
+		log("total=%s, sorted %s records to file %s in %ss", //
+				count, //
+				list.size(), //
+				file.getName(), //
+				df.format((System.currentTimeMillis() - t) / 1000.0));
+		return file;
+	}
+
+	private void writeToFile(List<T> list, File f) throws FileNotFoundException, IOException {
+		try (OutputStream out = fileSystem.outputStream(f); Writer<T> writer = serializer.createWriter(out)) {
+			T last = null;
+			for (T t : list) {
+				if (!unique || last == null || comparator.compare(t, last) != 0) {
+					writer.write(t);
+					last = t;
+				}
+			}
+		}
+	}
+
+	private File nextTempFile() throws IOException {
+		return fileSystem.nextTempFile(tempDirectory);
+	}
 
 }

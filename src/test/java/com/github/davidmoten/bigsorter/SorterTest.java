@@ -407,6 +407,7 @@ public class SorterTest {
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
                 .tempDirectory(new File("target")) //
+                .loggerStdOut() //
                 .sort();
 
         return readOutput();
