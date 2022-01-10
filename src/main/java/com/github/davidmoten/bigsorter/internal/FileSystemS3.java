@@ -86,4 +86,9 @@ public final class FileSystemS3 implements FileSystem {
 				.execute();
 	}
 
+	@Override
+	public File defaultTempDirectory() {
+		return new File("big-sorter-temp-"+ UUID.randomUUID().toString().replace("-",""));
+	}
+
 }

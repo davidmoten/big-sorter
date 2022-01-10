@@ -52,4 +52,9 @@ public final class FileSystemDisk implements FileSystem {
 		directory.mkdirs();
 	}
 
+	@Override
+	public File defaultTempDirectory() {
+		return new File(System.getProperty("java.io.tmpdir"));
+	}
+
 }

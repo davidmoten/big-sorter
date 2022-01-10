@@ -71,7 +71,7 @@ public final class Sorter<T> {
         this.maxFilesPerMerge = maxFilesPerMerge;
         this.maxItemsPerPart = maxItemsPerFile;
         this.log = log;
-        this.tempDirectory = tempDirectory;
+        this.tempDirectory = tempDirectory == null ? fileSystem.defaultTempDirectory() : tempDirectory;
         this.unique = unique;
         this.initialSortInParallel = initialSortInParallel;
     }
@@ -121,7 +121,7 @@ public final class Sorter<T> {
         private int maxFilesPerMerge = 100;
         private int maxItemsPerFile = 100000;
         private Consumer<? super String> logger = null;
-        private File tempDirectory = new File(System.getProperty("java.io.tmpdir"));
+        private File tempDirectory = null;
         private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
         private boolean unique;
         private boolean initialSortInParallel;
@@ -416,12 +416,10 @@ public final class Sorter<T> {
 				}).collect(Collectors.toList());
 	}
 
-	public static final class Builder5<T> {
-
-		private final Builder<T> b;
+	public static final class Builder5<T> extends Builder4Base<T, Builder5<T>>{
 
 		Builder5(Builder<T> b) {
-			this.b = b;
+			super(b);
 		}
 
 		/**

@@ -21,6 +21,8 @@ public interface FileSystem {
 
 	void mkdirs(File directory);
 	
+	File defaultTempDirectory();
+	
 	public static final FileSystem DISK = new FileSystemDisk();
 	
 }
