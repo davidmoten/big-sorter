@@ -16,12 +16,8 @@ import com.github.davidmoten.bigsorter.FileSystem;
 
 public final class FileSystemDisk implements FileSystem {
 	
-	private final int bufferSize;
-
-	public FileSystemDisk(int bufferSize) {
-		this.bufferSize = bufferSize;
-	}
-
+	private static final int BUFFER_SIZE = 8192;
+	
 	@Override
 	public File nextTempFile(File directory) throws IOException {
 		return File.createTempFile("big-sorter", "", directory);
@@ -29,7 +25,7 @@ public final class FileSystemDisk implements FileSystem {
 
 	@Override
 	public OutputStream outputStream(File file) throws FileNotFoundException {
-		return new BufferedOutputStream(new FileOutputStream(file), bufferSize);
+		return new BufferedOutputStream(new FileOutputStream(file), BUFFER_SIZE);
 	}
 
 	@Override
@@ -43,7 +39,7 @@ public final class FileSystemDisk implements FileSystem {
 
 	@Override
 	public InputStream inputStream(File file) throws IOException {
-		return new BufferedInputStream(new FileInputStream(file), bufferSize);
+		return new BufferedInputStream(new FileInputStream(file), BUFFER_SIZE);
 	}
 
 	@Override

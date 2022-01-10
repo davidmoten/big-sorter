@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import com.github.davidmoten.bigsorter.internal.FileSystemDisk;
+
 public interface FileSystem {
 
 	File nextTempFile(File directory) throws IOException;
@@ -18,5 +20,7 @@ public interface FileSystem {
 	void delete(File file) throws IOException;
 
 	void mkdirs(File directory);
+	
+	public static final FileSystem DISK = new FileSystemDisk();
 	
 }

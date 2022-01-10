@@ -26,10 +26,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.github.davidmoten.aws.lw.client.Client;
 // is java.util.ArrayList but with an extra parallelSort method that is more memory efficient 
 // that can be achieved outside the class
 import com.github.davidmoten.bigsorter.internal.ArrayList;
-import com.github.davidmoten.bigsorter.internal.FileSystemDisk;
+import com.github.davidmoten.bigsorter.internal.FileSystemS3;
 import com.github.davidmoten.bigsorter.internal.ReaderFromIterator;
 import com.github.davidmoten.guavamini.Lists;
 import com.github.davidmoten.guavamini.Preconditions;
@@ -120,13 +121,11 @@ public final class Sorter<T> {
         private int maxFilesPerMerge = 100;
         private int maxItemsPerFile = 100000;
         private Consumer<? super String> logger = null;
-        private int bufferSize = 8192;
         private File tempDirectory = new File(System.getProperty("java.io.tmpdir"));
         private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
         private boolean unique;
         private boolean initialSortInParallel;
-        private Function<Integer, FileSystem> fileSystemSupplier = bufferSize -> new FileSystemDisk(bufferSize);
-        private FileSystem fileSystem = null;
+        private FileSystem fileSystem = FileSystem.DISK;
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
@@ -353,19 +352,21 @@ public final class Sorter<T> {
 		}
 
 		@SuppressWarnings("unchecked")
-		public S bufferSize(int bufferSize) {
-			Preconditions.checkArgument(bufferSize > 0, "bufferSize must be greater than 0");
-			b.bufferSize = bufferSize;
-			return (S) this;
-		}
-
-		@SuppressWarnings("unchecked")
 		public S tempDirectory(File directory) {
 			Preconditions.checkNotNull(directory, "tempDirectory cannot be null");
 			b.tempDirectory = directory;
 			return (S) this;
 		}
-
+		
+		@SuppressWarnings("unchecked")
+		public S fileSystem(FileSystem fileSystem) {
+			b.fileSystem = fileSystem;
+			return (S) this;
+		}
+		
+		public S fileSystemS3(Client s3, String region) {
+			return fileSystem(new FileSystemS3(s3, region));
+		}
 	}
 
 	public static final class Builder4<T> extends Builder4Base<T, Builder4<T>> {
@@ -380,7 +381,6 @@ public final class Sorter<T> {
 		 * {@link UncheckedIOException}.
 		 */
 		public void sort() {
-			b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
 			Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
 					b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory, b.unique,
 					b.initialSortInParallel);
@@ -440,7 +440,6 @@ public final class Sorter<T> {
 		 * @return stream that on close deletes the output file of the sort
 		 */
 		public Stream<T> sort() {
-			b.fileSystem = b.fileSystemSupplier.apply(b.bufferSize);
 			try {
 				b.output = b.fileSystem.nextTempFile(b.tempDirectory);
 				Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,

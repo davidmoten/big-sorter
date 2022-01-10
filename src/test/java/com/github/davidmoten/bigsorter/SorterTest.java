@@ -390,7 +390,6 @@ public class SorterTest {
                 .output(OUTPUT) //
                 .maxFilesPerMerge(3) //
                 .maxItemsPerFile(2) //
-                .bufferSize(128) //
                 .sort();
 
         return readOutput();
@@ -622,16 +621,6 @@ public class SorterTest {
                 .maxItemsPerFile(-1);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testInvalidBufferSize() throws IOException {
-        File input = new File("target/input");
-        input.createNewFile();
-        Sorter.linesUtf8() //
-                .input(input) //
-                .output(new File("target/output")) //
-                .bufferSize(0);
-    }
-
     @Test(expected = NullPointerException.class)
     public void testInvalidTempDirectory() throws IOException {
         File input = new File("target/input");
@@ -747,7 +736,7 @@ public class SorterTest {
     public void testMergeFileWhenDoesNotExist() {
         List<Supplier<? extends Reader<? extends String>>> list = Collections.singletonList(() ->  
                 emptyReader());
-        FileSystemDisk fs = new FileSystemDisk(8192);
+        FileSystemDisk fs = new FileSystemDisk();
         Sorter<String> sorter = new Sorter<String>(fs, list, Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
                 }, new File(System.getProperty("java.io.tmpdir")), false, false);
