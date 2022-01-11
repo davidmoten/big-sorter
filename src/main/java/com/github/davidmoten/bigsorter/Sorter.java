@@ -272,10 +272,10 @@ public final class Sorter<T> {
 			return this;
 		}
 
-		public Builder4<T> output(File output) {
+		public BuilderHasOutput<T> output(File output) {
 			Preconditions.checkNotNull(output, "output cannot be null");
 			b.output = output;
-			return new Builder4<T>(b);
+			return new BuilderHasOutput<T>(b);
 		}
 
 		public Builder5<T> outputAsStream() {
@@ -369,9 +369,9 @@ public final class Sorter<T> {
 		}
 	}
 
-	public static final class Builder4<T> extends Builder4Base<T, Builder4<T>> {
+	public static final class BuilderHasOutput<T> extends Builder4Base<T, BuilderHasOutput<T>> {
 
-		Builder4(Builder<T> b) {
+		BuilderHasOutput(Builder<T> b) {
 			super(b);
 		}
 
