@@ -559,7 +559,7 @@ public class SorterTest {
         String s = "word1,number,word2\n\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
         Serializer<CSVRecord> ser = Serializer
-                .csv(CSVFormat.DEFAULT.withFirstRecordAsHeader().withRecordSeparator("\n"), StandardCharsets.UTF_8);
+                .csv(CSVFormat.Builder.create().setHeader().setRecordSeparator("\n").build(), StandardCharsets.UTF_8);
         Comparator<CSVRecord> comparator = (x, y) -> {
             int a = Integer.parseInt(x.get("number"));
             int b = Integer.parseInt(y.get("number"));
@@ -582,7 +582,7 @@ public class SorterTest {
     public void testCsvWithoutHeader() throws IOException {
         String s = "\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
-        Serializer<CSVRecord> ser = Serializer.csv(CSVFormat.DEFAULT.withRecordSeparator("\n"), StandardCharsets.UTF_8);
+        Serializer<CSVRecord> ser = Serializer.csv(CSVFormat.Builder.create().setRecordSeparator("\n").build(), StandardCharsets.UTF_8);
         Comparator<CSVRecord> comparator = (x, y) -> {
             int a = Integer.parseInt(x.get(1));
             int b = Integer.parseInt(y.get(1));
