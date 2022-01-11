@@ -23,6 +23,8 @@ public interface FileSystem {
 	
 	File defaultTempDirectory();
 	
+	void finished(File tempDirectory, boolean tempDirectorySpecifiedByUser);
+
 	public static final FileSystem DISK = new FileSystemDisk();
 	
 }

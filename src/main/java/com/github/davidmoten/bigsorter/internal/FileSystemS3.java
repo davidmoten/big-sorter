@@ -69,6 +69,7 @@ public final class FileSystemS3 implements FileSystem {
 
 	@Override
 	public void delete(File file) throws IOException {
+		// deletes an object (not applicable for a bucket)
 		s3.path(file.getParentFile().getName(), file.getName()) //
 				.method(HttpMethod.DELETE) //
 				.execute();
@@ -95,6 +96,14 @@ public final class FileSystemS3 implements FileSystem {
 	@Override
 	public File defaultTempDirectory() {
 		return new File("big-sorter-temp-" + UUID.randomUUID().toString().replace("-", ""));
+	}
+
+	@Override
+	public void finished(File tempDirectory, boolean tempDirectorySpecifiedByUser) {
+		if (!tempDirectorySpecifiedByUser) {
+			s3.path(tempDirectory.getName()) //
+					.method(HttpMethod.DELETE).execute();
+		}
 	}
 
 }

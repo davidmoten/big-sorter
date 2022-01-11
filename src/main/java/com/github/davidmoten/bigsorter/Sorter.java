@@ -439,7 +439,8 @@ public final class Sorter<T> {
 		 */
 		public Stream<T> sort() {
 			try {
-				if (b.tempDirectory == null) {
+				boolean tempDirectorySpecifiedByUser = b.tempDirectory == null;
+				if (tempDirectorySpecifiedByUser) {
 					b.tempDirectory = b.fileSystem.defaultTempDirectory();
 				}
 				b.output = b.fileSystem.nextTempFile(b.tempDirectory);
@@ -453,6 +454,7 @@ public final class Sorter<T> {
 						.onClose(() -> {
 							try {
 								b.fileSystem.delete(b.output);
+								b.fileSystem.finished(b.tempDirectory, tempDirectorySpecifiedByUser);
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}
