@@ -145,7 +145,7 @@ public final class Sorter<T> {
             this.b = b;
         }
 
-        public Builder3<T> input(Charset charset, String... strings) {
+        public BuilderHasInput<T> input(Charset charset, String... strings) {
             Preconditions.checkNotNull(strings, "string cannot be null");
             Preconditions.checkNotNull(charset, "charset cannot be null");
             List<Supplier<InputStream>> list = Arrays //
@@ -157,12 +157,12 @@ public final class Sorter<T> {
             return inputStreams(list);
         }
 
-        public Builder3<T> input(String... strings) {
+        public BuilderHasInput<T> input(String... strings) {
             Preconditions.checkNotNull(strings);
             return input(StandardCharsets.UTF_8, strings);
         }
         
-        public Builder3<T> input(InputStream... inputs) {
+        public BuilderHasInput<T> input(InputStream... inputs) {
             List<Supplier<InputStream>> list = Lists.newArrayList();
             for (InputStream in:inputs) {
                 list.add(() -> new NonClosingInputStream(in));
@@ -170,16 +170,16 @@ public final class Sorter<T> {
             return inputStreams(list);
         }
         
-        public Builder3<T> input(Supplier<? extends InputStream> input) {
+        public BuilderHasInput<T> input(Supplier<? extends InputStream> input) {
             Preconditions.checkNotNull(input, "input cannot be null");
             return inputStreams(Collections.singletonList(input));
         }
         
-        public Builder3<T> input(File... files) {
+        public BuilderHasInput<T> input(File... files) {
             return input(Arrays.asList(files));
         }
 
-        public Builder3<T> input(List<File> files) {
+        public BuilderHasInput<T> input(List<File> files) {
             Preconditions.checkNotNull(files, "files cannot be null");
             return inputStreams(files //
                     .stream() //
@@ -188,32 +188,32 @@ public final class Sorter<T> {
                     .collect(Collectors.toList()));
         }
         
-        public Builder3<T> inputStreams(List<? extends Supplier<? extends InputStream>> inputs) {
+        public BuilderHasInput<T> inputStreams(List<? extends Supplier<? extends InputStream>> inputs) {
             Preconditions.checkNotNull(inputs);
             for (Supplier<? extends InputStream> input: inputs) {
                 b.inputs.add(new Source(SourceType.SUPPLIER_INPUT_STREAM, input));
             }
-            return new Builder3<T>(b);
+            return new BuilderHasInput<T>(b);
         }
         
-        public Builder3<T> readers(List<? extends Supplier<? extends Reader<? extends T>>> readers) {
+        public BuilderHasInput<T> readers(List<? extends Supplier<? extends Reader<? extends T>>> readers) {
             Preconditions.checkNotNull(readers);
             for (Supplier<? extends Reader<? extends T>> input: readers) {
                 b.inputs.add(new Source(SourceType.SUPPLIER_READER, input));
             }
-            return new Builder3<T>(b);
+            return new BuilderHasInput<T>(b);
         }
         
-        public Builder3<T> inputItems(@SuppressWarnings("unchecked") T... items) {
+        public BuilderHasInput<T> inputItems(@SuppressWarnings("unchecked") T... items) {
             return inputItems(Arrays.asList(items));
         }
         
-        public Builder3<T> inputItems(Iterable<? extends T> iterable) {
+        public BuilderHasInput<T> inputItems(Iterable<? extends T> iterable) {
             Supplier<? extends Reader<? extends T>> supplier = () -> new ReaderFromIterator<T>(iterable.iterator());
             return readers(Collections.singletonList(supplier));
         }
         
-        public Builder3<T> inputItems(Iterator<? extends T> iterator) {
+        public BuilderHasInput<T> inputItems(Iterator<? extends T> iterator) {
             Supplier<? extends Reader<? extends T>> supplier = () -> new ReaderFromIterator<T>(iterator);
             return readers(Collections.singletonList(supplier));
         }
@@ -230,32 +230,32 @@ public final class Sorter<T> {
         
     }
 
-    public static final class Builder3<T> {
+    public static final class BuilderHasInput<T> {
         private final Builder<T> b;
 
-        Builder3(Builder<T> b) {
+        BuilderHasInput(Builder<T> b) {
             this.b = b;
         }
         
-        public Builder3<T> filter(Predicate<? super T> predicate) {
+        public BuilderHasInput<T> filter(Predicate<? super T> predicate) {
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
             return transform(r -> currentTransform.apply(r).filter(predicate));
         }
         
         @SuppressWarnings("unchecked")
-        public Builder3<T> map(Function<? super T, ? extends T> mapper) {
+        public BuilderHasInput<T> map(Function<? super T, ? extends T> mapper) {
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
             return transform(r -> ((Reader<T>) currentTransform.apply(r)).map(mapper));
         }
         
         @SuppressWarnings("unchecked")
-        public Builder3<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
+        public BuilderHasInput<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
             return transform(r -> ((Reader<T>) currentTransform.apply(r)).flatMap(mapper));
         }
 
         @SuppressWarnings("unchecked")
-        public Builder3<T> transform(
+        public BuilderHasInput<T> transform(
                 Function<? super Reader<T>, ? extends Reader<? extends T>> transform) {
             Preconditions.checkNotNull(transform, "transform cannot be null");
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
@@ -264,7 +264,7 @@ public final class Sorter<T> {
         }
 
         @SuppressWarnings("unchecked")
-        public Builder3<T> transformStream(
+        public BuilderHasInput<T> transformStream(
                 Function<? super Stream<T>, ? extends Stream<? extends T>> transform) {
             Preconditions.checkNotNull(transform, "transform cannot be null");
             Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
