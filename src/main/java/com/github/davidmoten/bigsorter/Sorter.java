@@ -89,11 +89,11 @@ public final class Sorter<T> {
         return serializer(Serializer.lines(charset));
     }
 
-    public static <T> Builder2<String> lines(Charset charset) {
+    public static <T> BuilderHasComparator<String> lines(Charset charset) {
         return serializer(Serializer.lines(charset)).comparator(Comparator.naturalOrder());
     }
 
-    public static <T> Builder2<String> linesUtf8() {
+    public static <T> BuilderHasComparator<String> linesUtf8() {
         return serializer(Serializer.linesUtf8()).comparator(Comparator.naturalOrder());
     }
     
@@ -131,17 +131,17 @@ public final class Sorter<T> {
             this.serializer = serializer;
         }
 
-        public Builder2<T> comparator(Comparator<? super T> comparator) {
+        public BuilderHasComparator<T> comparator(Comparator<? super T> comparator) {
             Preconditions.checkNotNull(comparator, "comparator cannot be null");
             this.comparator = comparator;
-            return new Builder2<T>(this);
+            return new BuilderHasComparator<T>(this);
         }
     }
 
-    public static final class Builder2<T> {
+    public static final class BuilderHasComparator<T> {
         private final Builder<T> b;
 
-        Builder2(Builder<T> b) {
+        BuilderHasComparator(Builder<T> b) {
             this.b = b;
         }
 
