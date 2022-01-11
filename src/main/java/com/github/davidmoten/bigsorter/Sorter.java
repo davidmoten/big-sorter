@@ -278,8 +278,8 @@ public final class Sorter<T> {
 			return new BuilderHasOutput<T>(b);
 		}
 
-		public Builder5<T> outputAsStream() {
-			return new Builder5<T>(b);
+		public BuilderHasOutputStreamed<T> outputAsStream() {
+			return new BuilderHasOutputStreamed<T>(b);
 		}
 
 	}
@@ -416,9 +416,9 @@ public final class Sorter<T> {
 				}).collect(Collectors.toList());
 	}
 
-	public static final class Builder5<T> extends Builder4Base<T, Builder5<T>>{
+	public static final class BuilderHasOutputStreamed<T> extends Builder4Base<T, BuilderHasOutputStreamed<T>>{
 
-		Builder5(Builder<T> b) {
+		BuilderHasOutputStreamed(Builder<T> b) {
 			super(b);
 		}
 
