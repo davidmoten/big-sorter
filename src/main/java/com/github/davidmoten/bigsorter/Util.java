@@ -76,11 +76,11 @@ public final class Util {
      * @throws IOException
      *             I/O exception
      */
-    public static <T> void findSame(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
+    public static <T> void findSame(FileSystem fs, File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
             File output) throws IOException {
-        try (Reader<T> readerA = serializer.createReader(a);
-                Reader<T> readerB = serializer.createReader(b);
-                Writer<T> writer = serializer.createWriter(output)) {
+        try (Reader<T> readerA = serializer.createReader(fs, a);
+                Reader<T> readerB = serializer.createReader(fs, b);
+                Writer<T> writer = serializer.createWriter(fs, output)) {
             Util.findSame(readerA, readerB, comparator, writer);
         }
     }
@@ -151,11 +151,11 @@ public final class Util {
      * @throws IOException
      *             I/O exception
      */
-    public static <T> void findDifferent(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
+    public static <T> void findDifferent(FileSystem fs, File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
             File output) throws IOException {
-        try (Reader<T> readerA = serializer.createReader(a);
-                Reader<T> readerB = serializer.createReader(b);
-                Writer<T> writer = serializer.createWriter(output)) {
+        try (Reader<T> readerA = serializer.createReader(fs, a);
+                Reader<T> readerB = serializer.createReader(fs, b);
+                Writer<T> writer = serializer.createWriter(fs, output)) {
             Util.findDifferent(readerA, readerB, comparator, writer);
         }
     }
@@ -221,29 +221,30 @@ public final class Util {
      * @throws IOException
      *             I/O exception
      */
-    public static <T> void findComplement(File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
+    public static <T> void findComplement(FileSystem fs, File a, File b, Serializer<T> serializer, Comparator<? super T> comparator,
             File output) throws IOException {
-        try (Reader<T> readerA = serializer.createReader(a);
-                Reader<T> readerB = serializer.createReader(b);
-                Writer<T> writer = serializer.createWriter(output)) {
+        try (Reader<T> readerA = serializer.createReader(fs, a);
+                Reader<T> readerB = serializer.createReader(fs, b);
+                Writer<T> writer = serializer.createWriter(fs, output)) {
             Util.findComplement(readerA, readerB, comparator, writer);
         }
     }
 
-    public static <T> List<File> splitByCount(File input, Serializer<T> serializer, long count) throws IOException {
+    public static <T> List<File> splitByCount(FileSystem fs, File input, Serializer<T> serializer, long count) throws IOException {
         return splitByCount( //
+        		fs, //
                 input, //
                 serializer, //
                 n -> new File(input.getParentFile(), input.getName() + "-" + n), //
                 count);
     }
     
-    public static <T> List<File> splitByCount(File input, Serializer<T> serializer, Function<Integer, File> output,
+    public static <T> List<File> splitByCount(FileSystem fs, File input, Serializer<T> serializer, Function<Integer, File> output,
             long count) throws IOException {
-        return splitByCount(Collections.singletonList(input), serializer, output, count);
+        return splitByCount(fs, Collections.singletonList(input), serializer, output, count);
     }
 
-    public static <T> List<File> splitByCount(List<File> input, Serializer<T> serializer, Function<Integer, File> output,
+    public static <T> List<File> splitByCount(FileSystem fs, List<File> input, Serializer<T> serializer, Function<Integer, File> output,
             long count) throws IOException {
         Preconditions.checkArgument(count > 0, "count must be greater than 0");
         List<File> list = Lists.newArrayList();
@@ -253,13 +254,13 @@ public final class Util {
         Writer<T> writer = null;
         try {
             for (File file : input) {
-                try (Reader<T> reader = serializer.createReader(file)) {
+                try (Reader<T> reader = serializer.createReader(fs, file)) {
                     while ((t = reader.read()) != null) {
                         if (writer == null) {
                             fileNumber++;
                             File f = output.apply(fileNumber);
                             list.add(f);
-                            writer = serializer.createWriter(f);
+                            writer = serializer.createWriter(fs, f);
                         }
                         writer.write(t);
                         i++;
@@ -279,20 +280,21 @@ public final class Util {
         return list;
     }
     
-    public static <T> List<File> splitBySize(File input, Serializer<T> serializer, long maxSize) throws IOException {
+    public static <T> List<File> splitBySize(FileSystem fs, File input, Serializer<T> serializer, long maxSize) throws IOException {
         return splitBySize( //
+        		fs, //
                 input, //
                 serializer, //
                 n -> new File(input.getParentFile(), input.getName() + "-" + n), //
                 maxSize);
     }
     
-    public static <T> List<File> splitBySize(File input, Serializer<T> serializer, Function<Integer, File> output,
+    public static <T> List<File> splitBySize(FileSystem fs, File input, Serializer<T> serializer, Function<Integer, File> output,
             long maxSize) throws IOException {
-        return splitBySize(Collections.singletonList(input), serializer, output, maxSize);
+        return splitBySize(fs, Collections.singletonList(input), serializer, output, maxSize);
     }
 
-    public static <T> List<File> splitBySize(List<File> input, Serializer<T> serializer, Function<Integer, File> output,
+    public static <T> List<File> splitBySize(FileSystem fs, List<File> input, Serializer<T> serializer, Function<Integer, File> output,
             long maxSize) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         Writer<T> buffer = serializer.createWriter(bytes);
@@ -303,7 +305,7 @@ public final class Util {
         Writer<T> writer = null;
         try {
             for (File file : input) {
-                try (Reader<T> reader = serializer.createReader(file)) {
+                try (Reader<T> reader = serializer.createReader(fs, file)) {
                     while ((t = reader.read()) != null) {
                         // check increase in size from writing t
                         // by writing to buffer
@@ -315,14 +317,14 @@ public final class Util {
                             fileNumber++;
                             File f = output.apply(fileNumber);
                             list.add(f);
-                            writer = serializer.createWriter(f);
+                            writer = serializer.createWriter(fs, f);
                             n = bytes.size();
                         } else if (n > maxSize) {
                             writer.close();
                             fileNumber++;
                             File f = output.apply(fileNumber);
                             list.add(f);
-                            writer = serializer.createWriter(f);
+                            writer = serializer.createWriter(fs, f);
                             n = bytes.size();
                         }
                         writer.write(t);

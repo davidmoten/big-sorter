@@ -439,13 +439,16 @@ public final class Sorter<T> {
 		 */
 		public Stream<T> sort() {
 			try {
+				if (b.tempDirectory == null) {
+					b.tempDirectory = b.fileSystem.defaultTempDirectory();
+				}
 				b.output = b.fileSystem.nextTempFile(b.tempDirectory);
 				Sorter<T> sorter = new Sorter<T>(b.fileSystem, inputs(b), b.serializer, b.output, b.comparator,
 						b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.tempDirectory, b.unique,
 						b.initialSortInParallel);
 				sorter.sort();
 				return b.serializer //
-						.createReader(b.output) //
+						.createReader(b.fileSystem, b.output) //
 						.stream() //
 						.onClose(() -> {
 							try {
@@ -457,7 +460,7 @@ public final class Sorter<T> {
 			} catch (Throwable e) {
 				try {
 					b.fileSystem.delete(b.output);
-				} catch (IOException e1) {
+				} catch (Throwable e1) {
 					// TODO throw a composite exception?
 					e1.printStackTrace();
 				}

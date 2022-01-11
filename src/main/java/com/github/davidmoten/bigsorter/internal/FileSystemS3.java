@@ -12,6 +12,7 @@ import com.github.davidmoten.aws.lw.client.Multipart;
 import com.github.davidmoten.aws.lw.client.ResponseInputStream;
 import com.github.davidmoten.aws.lw.client.xml.builder.Xml;
 import com.github.davidmoten.bigsorter.FileSystem;
+import com.github.davidmoten.guavamini.Preconditions;
 
 public final class FileSystemS3 implements FileSystem {
 
@@ -25,11 +26,13 @@ public final class FileSystemS3 implements FileSystem {
 	
 	@Override
 	public File nextTempFile(File directory) throws IOException {
+		Preconditions.checkNotNull(directory);
 		return new File(directory, "big-sorter-" + UUID.randomUUID().toString().replace("-", ""));
 	}
 
 	@Override
 	public OutputStream outputStream(File file) throws IOException {
+		System.out.println(file + " " + file.getParentFile());
 		return Multipart //
 				.s3(s3)//
 				.bucket(file.getParentFile().getName()) //

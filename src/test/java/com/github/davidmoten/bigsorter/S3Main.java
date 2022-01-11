@@ -14,6 +14,7 @@ public class S3Main {
 		try (Stream<String> lines = Sorter.linesUtf8() //
 				.input("hello", "there", "about") //
 				.outputAsStream() //
+				.loggerStdOut() //
 				.fileSystemS3(s3, "ap-southeast-2") //
 				.sort()) {
 			System.out.println(lines.collect(Collectors.toList()));

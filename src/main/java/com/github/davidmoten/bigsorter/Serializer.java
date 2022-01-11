@@ -1,12 +1,13 @@
 package com.github.davidmoten.bigsorter;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 
 import org.apache.commons.csv.CSVFormat;
@@ -21,12 +22,20 @@ public interface Serializer<T> {
 
     Writer<T> createWriter(OutputStream out);
     
-    default Reader<T> createReader(File file) throws FileNotFoundException {
-        return createReader(new FileInputStream(file));
+    default Reader<T> createReader(FileSystem fileSystem, File file) throws FileNotFoundException {
+        try {
+			return createReader(fileSystem.inputStream(file));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
     }
     
-    default Writer<T> createWriter(File file) throws FileNotFoundException {
-        return createWriter(new FileOutputStream(file));
+    default Writer<T> createWriter(FileSystem fileSystem, File file) {
+        try {
+			return createWriter(fileSystem.outputStream(file));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
     }
 
     static Serializer<String> linesUtf8() {
