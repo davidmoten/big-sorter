@@ -9,6 +9,7 @@ import java.util.UUID;
 import com.github.davidmoten.aws.lw.client.Client;
 import com.github.davidmoten.aws.lw.client.HttpMethod;
 import com.github.davidmoten.aws.lw.client.Multipart;
+import com.github.davidmoten.aws.lw.client.Response;
 import com.github.davidmoten.aws.lw.client.ResponseInputStream;
 import com.github.davidmoten.aws.lw.client.xml.builder.Xml;
 import com.github.davidmoten.bigsorter.FileSystem;
@@ -23,7 +24,7 @@ public final class FileSystemS3 implements FileSystem {
 		this.s3 = s3;
 		this.region = region;
 	}
-	
+
 	@Override
 	public File nextTempFile(File directory) throws IOException {
 		Preconditions.checkNotNull(directory);
@@ -32,7 +33,6 @@ public final class FileSystemS3 implements FileSystem {
 
 	@Override
 	public OutputStream outputStream(File file) throws IOException {
-		System.out.println(file + " " + file.getParentFile());
 		return Multipart //
 				.s3(s3)//
 				.bucket(file.getParentFile().getName()) //
@@ -76,22 +76,25 @@ public final class FileSystemS3 implements FileSystem {
 
 	@Override
 	public void mkdirs(File directory) {
-		String xml = Xml //
-				.create("CreateBucketConfiguration") //
-				.a("xmlns", "http://s3.amazonaws.com/doc/2006-03-01/") //
-				.e("LocationConstraint") //
-				.content(region) //
-				.toString();
-		s3 //
-				.path(directory.getName()) //
-				.method(HttpMethod.PUT) //
-				.requestBody(xml) //
-				.execute();
+		Response r = s3.path(directory.getName()).query("location").response();
+		if (r.statusCode() == 404) {
+			String xml = Xml //
+					.create("CreateBucketConfiguration") //
+					.a("xmlns", "http://s3.amazonaws.com/doc/2006-03-01/") //
+					.e("LocationConstraint") //
+					.content(region) //
+					.toString();
+			s3 //
+					.path(directory.getName()) //
+					.method(HttpMethod.PUT) //
+					.requestBody(xml) //
+					.execute();
+		}
 	}
 
 	@Override
 	public File defaultTempDirectory() {
-		return new File("big-sorter-temp-"+ UUID.randomUUID().toString().replace("-",""));
+		return new File("big-sorter-temp-" + UUID.randomUUID().toString().replace("-", ""));
 	}
 
 }
