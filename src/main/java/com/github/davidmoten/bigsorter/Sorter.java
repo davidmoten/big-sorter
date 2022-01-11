@@ -284,10 +284,10 @@ public final class Sorter<T> {
 
 	}
 
-	public static class Builder4Base<T, S extends Builder4Base<T, S>> {
+	public static class BuilderHasOutputBase<T, S extends BuilderHasOutputBase<T, S>> {
 		protected final Builder<T> b;
 
-		Builder4Base(Builder<T> b) {
+		BuilderHasOutputBase(Builder<T> b) {
 			this.b = b;
 		}
 
@@ -369,7 +369,7 @@ public final class Sorter<T> {
 		}
 	}
 
-	public static final class BuilderHasOutput<T> extends Builder4Base<T, BuilderHasOutput<T>> {
+	public static final class BuilderHasOutput<T> extends BuilderHasOutputBase<T, BuilderHasOutput<T>> {
 
 		BuilderHasOutput(Builder<T> b) {
 			super(b);
@@ -416,7 +416,7 @@ public final class Sorter<T> {
 				}).collect(Collectors.toList());
 	}
 
-	public static final class BuilderHasOutputStreamed<T> extends Builder4Base<T, BuilderHasOutputStreamed<T>>{
+	public static final class BuilderHasOutputStreamed<T> extends BuilderHasOutputBase<T, BuilderHasOutputStreamed<T>>{
 
 		BuilderHasOutputStreamed(Builder<T> b) {
 			super(b);
