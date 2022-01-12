@@ -42,5 +42,26 @@ public final class FileSystemS3Test {
 		o.verify(request2c).execute();
 		o.verifyNoMoreInteractions();
 	}
+	
+	@Test
+	public void mkdirsWhenDoesExist() {
+		Client s3 = Mockito.mock(Client.class);
+		Request request1a = Mockito.mock(Request.class);
+		Request request1b = Mockito.mock(Request.class);
+		Response response = Mockito.mock(Response.class);
+		Mockito.when(s3.path("temp")).thenReturn(request1a);
+		Mockito.when(request1a.query("location")).thenReturn(request1b);
+		Mockito.when(request1b.response()).thenReturn(response);
+		Mockito.when(response.statusCode()).thenReturn(200);
+
+		FileSystemS3 fs = new FileSystemS3(s3, "ap-southeast-2");
+		fs.mkdirs(new File("temp"));
+		InOrder o = Mockito.inOrder(s3, request1a, request1b, response);
+		o.verify(s3).path("temp");
+		o.verify(request1a).query("location");
+		o.verify(request1b).response();
+		o.verify(response).statusCode();
+		o.verifyNoMoreInteractions();
+	}
 
 }
