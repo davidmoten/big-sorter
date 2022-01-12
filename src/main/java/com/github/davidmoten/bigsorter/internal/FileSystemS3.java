@@ -77,7 +77,9 @@ public final class FileSystemS3 implements FileSystem {
 
 	@Override
 	public void mkdirs(File directory) {
-		Response r = s3.path(directory.getName()).query("location").response();
+		Response r = s3.path(directory.getName()) //
+				.query("location") //
+				.response();
 		if (r.statusCode() == 404) {
 			String xml = Xml //
 					.create("CreateBucketConfiguration") //
