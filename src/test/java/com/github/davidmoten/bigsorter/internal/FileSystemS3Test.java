@@ -1,6 +1,10 @@
 package com.github.davidmoten.bigsorter.internal;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -42,7 +46,7 @@ public final class FileSystemS3Test {
 		o.verify(request2c).execute();
 		o.verifyNoMoreInteractions();
 	}
-	
+
 	@Test
 	public void mkdirsWhenDoesExist() {
 		Client s3 = Mockito.mock(Client.class);
@@ -62,6 +66,15 @@ public final class FileSystemS3Test {
 		o.verify(request1b).response();
 		o.verify(response).statusCode();
 		o.verifyNoMoreInteractions();
+	}
+
+	@Test
+	public void testNextTempFile() throws IOException {
+		Client s3 = Mockito.mock(Client.class);
+		FileSystemS3 fs = new FileSystemS3(s3, "ap-southeast-2");
+		File f = fs.nextTempFile(new File("temp"));
+		assertTrue(f.getName().startsWith("big-sorter"));
+		assertEquals("temp", f.getParentFile().getName());
 	}
 
 }
