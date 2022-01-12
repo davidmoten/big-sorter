@@ -1,6 +1,5 @@
 package com.github.davidmoten.bigsorter;
 
-import java.io.File;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -12,7 +11,7 @@ public class S3Main {
 		String accessKey = System.getProperty("accessKey");
 		String secretKey = System.getProperty("secretKey");
 		Client s3 = Client.s3().region("ap-southeast-2").accessKey(accessKey).secretKey(secretKey).build();
-		Client iam =Client.iam().regionNone().accessKey(accessKey).secretKey(secretKey).build();
+		Client iam = Client.iam().regionNone().accessKey(accessKey).secretKey(secretKey).build();
 		String arn = iam //
 				.query("Action", "GetUser") //
 				.query("Version", "2010-05-08") //
@@ -23,15 +22,18 @@ public class S3Main {
 		int j = arn.indexOf(":user/");
 		String accountId = arn.substring(i, j);
 		System.out.println(accountId);
-		try (Stream<String> lines = Sorter.linesUtf8() //
+		Stream<String> lines = Sorter //
+				.linesUtf8() //
 				.input("hello", "there", "about") //
 				.outputAsStream() //
 				.loggerStdOut() //
 				.fileSystemS3(s3, "ap-southeast-2") //
-				.tempDirectory(new File("big-sorter-temp-" + accountId)) //
-				.sort()) {
-			System.out.println(lines.collect(Collectors.toList()));
-		}
+//				.tempDirectory(new File("big-sorter-temp-" + accountId)) //
+				.sort();
+		System.out.println(lines.collect(Collectors.toList()));
+		System.out.println("closing");
+		lines.close();
+		System.out.println("done");
 	}
 
 }

@@ -99,11 +99,11 @@ public final class FileSystemS3 implements FileSystem {
 	}
 
 	@Override
-	public void finished(File tempDirectory, boolean tempDirectorySpecifiedByUser) {
-		if (!tempDirectorySpecifiedByUser) {
-			s3.path(tempDirectory.getName()) //
-					.method(HttpMethod.DELETE).execute();
-		}
+	public void finished(File tempDirectory) {
+		s3 //
+				.path(tempDirectory.getName()) //
+				.method(HttpMethod.DELETE) //
+				.execute();
 	}
 
 }

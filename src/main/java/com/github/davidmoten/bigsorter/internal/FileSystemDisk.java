@@ -58,7 +58,7 @@ public final class FileSystemDisk implements FileSystem {
 	}
 
 	@Override
-	public void finished(File tempDirectory, boolean tempDirectorySpecifiedByUser) {
+	public void finished(File tempDirectory) {
 		// ignore this because java.io.tmpdir used if temp directory not specified and
 		// we don't want to delete that directory
 	}

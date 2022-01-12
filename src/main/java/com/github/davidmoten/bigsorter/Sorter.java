@@ -43,232 +43,231 @@ import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 public final class Sorter<T> {
 
 	private final FileSystem fileSystem;
-    private final List<Supplier<? extends Reader<? extends T>>> inputs;
-    private final Serializer<T> serializer;
-    private final File output;
-    private final Comparator<? super T> comparator;
-    private final int maxFilesPerMerge;
-    private final int maxItemsPerPart;
-    private final Consumer<? super String> log;
-    private final File tempDirectory;
-    private final boolean unique;
-    private final boolean initialSortInParallel;
-    private long count = 0;
+	private final List<Supplier<? extends Reader<? extends T>>> inputs;
+	private final Serializer<T> serializer;
+	private final File output;
+	private final Comparator<? super T> comparator;
+	private final int maxFilesPerMerge;
+	private final int maxItemsPerPart;
+	private final Consumer<? super String> log;
+	private final File tempDirectory;
+	private final boolean unique;
+	private final boolean initialSortInParallel;
+	private long count = 0;
 
-    Sorter(FileSystem fileSystem, List<Supplier<? extends Reader<? extends T>>> inputs, Serializer<T> serializer, File output,
-            Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log,
-            File tempDirectory, boolean unique, boolean initialSortInParallel) {
-    	Preconditions.checkNotNull(fileSystem, "fileSystem cannot be null");
-        Preconditions.checkNotNull(inputs, "inputs cannot be null");
-        Preconditions.checkNotNull(serializer, "serializer cannot be null");
-        Preconditions.checkNotNull(output, "output cannot be null");
-        Preconditions.checkNotNull(comparator, "comparator cannot be null");
-        this.fileSystem = fileSystem;
-        this.inputs = inputs;
-        this.serializer = serializer;
-        this.output = output;
-        this.comparator = comparator;
-        this.maxFilesPerMerge = maxFilesPerMerge;
-        this.maxItemsPerPart = maxItemsPerFile;
-        this.log = log;
-        this.tempDirectory = tempDirectory == null ? fileSystem.defaultTempDirectory() : tempDirectory;
-        this.unique = unique;
-        this.initialSortInParallel = initialSortInParallel;
-    }
+	Sorter(FileSystem fileSystem, List<Supplier<? extends Reader<? extends T>>> inputs, Serializer<T> serializer,
+			File output, Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile,
+			Consumer<? super String> log, File tempDirectory, boolean unique, boolean initialSortInParallel) {
+		Preconditions.checkNotNull(fileSystem, "fileSystem cannot be null");
+		Preconditions.checkNotNull(inputs, "inputs cannot be null");
+		Preconditions.checkNotNull(serializer, "serializer cannot be null");
+		Preconditions.checkNotNull(output, "output cannot be null");
+		Preconditions.checkNotNull(comparator, "comparator cannot be null");
+		this.fileSystem = fileSystem;
+		this.inputs = inputs;
+		this.serializer = serializer;
+		this.output = output;
+		this.comparator = comparator;
+		this.maxFilesPerMerge = maxFilesPerMerge;
+		this.maxItemsPerPart = maxItemsPerFile;
+		this.log = log;
+		this.tempDirectory = tempDirectory == null ? fileSystem.defaultTempDirectory() : tempDirectory;
+		this.unique = unique;
+		this.initialSortInParallel = initialSortInParallel;
+	}
 
-    public static <T> Builder<T> serializer(Serializer<T> serializer) {
-        Preconditions.checkNotNull(serializer, "serializer cannot be null");
-        return new Builder<T>(serializer);
-    }
+	public static <T> Builder<T> serializer(Serializer<T> serializer) {
+		Preconditions.checkNotNull(serializer, "serializer cannot be null");
+		return new Builder<T>(serializer);
+	}
 
-    public static <T> Builder<String> serializerLinesUtf8() {
-        return serializer(Serializer.linesUtf8());
-    }
+	public static <T> Builder<String> serializerLinesUtf8() {
+		return serializer(Serializer.linesUtf8());
+	}
 
-    public static <T> Builder<String> serializerLines(Charset charset) {
-        return serializer(Serializer.lines(charset));
-    }
+	public static <T> Builder<String> serializerLines(Charset charset) {
+		return serializer(Serializer.lines(charset));
+	}
 
-    public static <T> BuilderHasComparator<String> lines(Charset charset) {
-        return serializer(Serializer.lines(charset)).comparator(Comparator.naturalOrder());
-    }
+	public static <T> BuilderHasComparator<String> lines(Charset charset) {
+		return serializer(Serializer.lines(charset)).comparator(Comparator.naturalOrder());
+	}
 
-    public static <T> BuilderHasComparator<String> linesUtf8() {
-        return serializer(Serializer.linesUtf8()).comparator(Comparator.naturalOrder());
-    }
-    
-    private enum SourceType {
-        SUPPLIER_INPUT_STREAM, SUPPLIER_READER
-    }
-    
-    private static final class Source {
-        final SourceType type;
-        final Object source;
+	public static <T> BuilderHasComparator<String> linesUtf8() {
+		return serializer(Serializer.linesUtf8()).comparator(Comparator.naturalOrder());
+	}
 
-        Source(SourceType type, Object source) {
-            this.type = type;
-            this.source = source;
-        }
-    }
+	private enum SourceType {
+		SUPPLIER_INPUT_STREAM, SUPPLIER_READER
+	}
 
-    public static final class Builder<T> {
-        private static final DateTimeFormatter DATE_TIME_PATTERN = DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm:ss.Sxxxx");
-        private List<Source> inputs = Lists.newArrayList();
-        private final Serializer<T> serializer;
-        private File output;
-        private Comparator<? super T> comparator;
-        private int maxFilesPerMerge = 100;
-        private int maxItemsPerFile = 100000;
-        private Consumer<? super String> logger = null;
-        private File tempDirectory = null;
-        private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
-        private boolean unique;
-        private boolean initialSortInParallel;
-        private FileSystem fileSystem = FileSystem.DISK;
+	private static final class Source {
+		final SourceType type;
+		final Object source;
 
-        Builder(Serializer<T> serializer) {
-            this.serializer = serializer;
-        }
+		Source(SourceType type, Object source) {
+			this.type = type;
+			this.source = source;
+		}
+	}
 
-        public BuilderHasComparator<T> comparator(Comparator<? super T> comparator) {
-            Preconditions.checkNotNull(comparator, "comparator cannot be null");
-            this.comparator = comparator;
-            return new BuilderHasComparator<T>(this);
-        }
-    }
+	public static final class Builder<T> {
+		private static final DateTimeFormatter DATE_TIME_PATTERN = DateTimeFormatter
+				.ofPattern("yyyy-MM-dd HH:mm:ss.Sxxxx");
+		private List<Source> inputs = Lists.newArrayList();
+		private final Serializer<T> serializer;
+		private File output;
+		private Comparator<? super T> comparator;
+		private int maxFilesPerMerge = 100;
+		private int maxItemsPerFile = 100000;
+		private Consumer<? super String> logger = null;
+		private File tempDirectory = null;
+		private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
+		private boolean unique;
+		private boolean initialSortInParallel;
+		private FileSystem fileSystem = FileSystem.DISK;
 
-    public static final class BuilderHasComparator<T> {
-        private final Builder<T> b;
+		Builder(Serializer<T> serializer) {
+			this.serializer = serializer;
+		}
 
-        BuilderHasComparator(Builder<T> b) {
-            this.b = b;
-        }
+		public BuilderHasComparator<T> comparator(Comparator<? super T> comparator) {
+			Preconditions.checkNotNull(comparator, "comparator cannot be null");
+			this.comparator = comparator;
+			return new BuilderHasComparator<T>(this);
+		}
+	}
 
-        public BuilderHasInput<T> input(Charset charset, String... strings) {
-            Preconditions.checkNotNull(strings, "string cannot be null");
-            Preconditions.checkNotNull(charset, "charset cannot be null");
-            List<Supplier<InputStream>> list = Arrays //
-                    .asList(strings) //
-                    .stream() //
-                    .map(string -> new ByteArrayInputStream(string.getBytes(charset))) //
-                    .map(bis -> (Supplier<InputStream>)(() -> bis)) //
-                    .collect(Collectors.toList());
-            return inputStreams(list);
-        }
+	public static final class BuilderHasComparator<T> {
+		private final Builder<T> b;
 
-        public BuilderHasInput<T> input(String... strings) {
-            Preconditions.checkNotNull(strings);
-            return input(StandardCharsets.UTF_8, strings);
-        }
-        
-        public BuilderHasInput<T> input(InputStream... inputs) {
-            List<Supplier<InputStream>> list = Lists.newArrayList();
-            for (InputStream in:inputs) {
-                list.add(() -> new NonClosingInputStream(in));
-            }
-            return inputStreams(list);
-        }
-        
-        public BuilderHasInput<T> input(Supplier<? extends InputStream> input) {
-            Preconditions.checkNotNull(input, "input cannot be null");
-            return inputStreams(Collections.singletonList(input));
-        }
-        
-        public BuilderHasInput<T> input(File... files) {
-            return input(Arrays.asList(files));
-        }
+		BuilderHasComparator(Builder<T> b) {
+			this.b = b;
+		}
 
-        public BuilderHasInput<T> input(List<File> files) {
-            Preconditions.checkNotNull(files, "files cannot be null");
-            return inputStreams(files //
-                    .stream() //
-                    
-                    .map(file -> supplier(file)) //
-                    .collect(Collectors.toList()));
-        }
-        
-        public BuilderHasInput<T> inputStreams(List<? extends Supplier<? extends InputStream>> inputs) {
-            Preconditions.checkNotNull(inputs);
-            for (Supplier<? extends InputStream> input: inputs) {
-                b.inputs.add(new Source(SourceType.SUPPLIER_INPUT_STREAM, input));
-            }
-            return new BuilderHasInput<T>(b);
-        }
-        
-        public BuilderHasInput<T> readers(List<? extends Supplier<? extends Reader<? extends T>>> readers) {
-            Preconditions.checkNotNull(readers);
-            for (Supplier<? extends Reader<? extends T>> input: readers) {
-                b.inputs.add(new Source(SourceType.SUPPLIER_READER, input));
-            }
-            return new BuilderHasInput<T>(b);
-        }
-        
-        public BuilderHasInput<T> inputItems(@SuppressWarnings("unchecked") T... items) {
-            return inputItems(Arrays.asList(items));
-        }
-        
-        public BuilderHasInput<T> inputItems(Iterable<? extends T> iterable) {
-            Supplier<? extends Reader<? extends T>> supplier = () -> new ReaderFromIterator<T>(iterable.iterator());
-            return readers(Collections.singletonList(supplier));
-        }
-        
-        public BuilderHasInput<T> inputItems(Iterator<? extends T> iterator) {
-            Supplier<? extends Reader<? extends T>> supplier = () -> new ReaderFromIterator<T>(iterator);
-            return readers(Collections.singletonList(supplier));
-        }
-        
-        private Supplier<InputStream> supplier(File file) {
-            return () -> {
-                try {
-                    return b.fileSystem.inputStream(file);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            };
-        }
-        
-    }
+		public BuilderHasInput<T> input(Charset charset, String... strings) {
+			Preconditions.checkNotNull(strings, "string cannot be null");
+			Preconditions.checkNotNull(charset, "charset cannot be null");
+			List<Supplier<InputStream>> list = Arrays //
+					.asList(strings) //
+					.stream() //
+					.map(string -> new ByteArrayInputStream(string.getBytes(charset))) //
+					.map(bis -> (Supplier<InputStream>) (() -> bis)) //
+					.collect(Collectors.toList());
+			return inputStreams(list);
+		}
 
-    public static final class BuilderHasInput<T> {
-        private final Builder<T> b;
+		public BuilderHasInput<T> input(String... strings) {
+			Preconditions.checkNotNull(strings);
+			return input(StandardCharsets.UTF_8, strings);
+		}
 
-        BuilderHasInput(Builder<T> b) {
-            this.b = b;
-        }
-        
-        public BuilderHasInput<T> filter(Predicate<? super T> predicate) {
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            return transform(r -> currentTransform.apply(r).filter(predicate));
-        }
-        
-        @SuppressWarnings("unchecked")
-        public BuilderHasInput<T> map(Function<? super T, ? extends T> mapper) {
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            return transform(r -> ((Reader<T>) currentTransform.apply(r)).map(mapper));
-        }
-        
-        @SuppressWarnings("unchecked")
-        public BuilderHasInput<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            return transform(r -> ((Reader<T>) currentTransform.apply(r)).flatMap(mapper));
-        }
+		public BuilderHasInput<T> input(InputStream... inputs) {
+			List<Supplier<InputStream>> list = Lists.newArrayList();
+			for (InputStream in : inputs) {
+				list.add(() -> new NonClosingInputStream(in));
+			}
+			return inputStreams(list);
+		}
 
-        @SuppressWarnings("unchecked")
-        public BuilderHasInput<T> transform(
-                Function<? super Reader<T>, ? extends Reader<? extends T>> transform) {
-            Preconditions.checkNotNull(transform, "transform cannot be null");
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            b.transform = r -> transform.apply((Reader<T>) currentTransform.apply(r));
-            return this;
-        }
+		public BuilderHasInput<T> input(Supplier<? extends InputStream> input) {
+			Preconditions.checkNotNull(input, "input cannot be null");
+			return inputStreams(Collections.singletonList(input));
+		}
 
-        @SuppressWarnings("unchecked")
-        public BuilderHasInput<T> transformStream(
-                Function<? super Stream<T>, ? extends Stream<? extends T>> transform) {
-            Preconditions.checkNotNull(transform, "transform cannot be null");
-            Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
-            b.transform = r -> ((Reader<T>) currentTransform.apply(r)).transform(transform);
+		public BuilderHasInput<T> input(File... files) {
+			return input(Arrays.asList(files));
+		}
+
+		public BuilderHasInput<T> input(List<File> files) {
+			Preconditions.checkNotNull(files, "files cannot be null");
+			return inputStreams(files //
+					.stream() //
+
+					.map(file -> supplier(file)) //
+					.collect(Collectors.toList()));
+		}
+
+		public BuilderHasInput<T> inputStreams(List<? extends Supplier<? extends InputStream>> inputs) {
+			Preconditions.checkNotNull(inputs);
+			for (Supplier<? extends InputStream> input : inputs) {
+				b.inputs.add(new Source(SourceType.SUPPLIER_INPUT_STREAM, input));
+			}
+			return new BuilderHasInput<T>(b);
+		}
+
+		public BuilderHasInput<T> readers(List<? extends Supplier<? extends Reader<? extends T>>> readers) {
+			Preconditions.checkNotNull(readers);
+			for (Supplier<? extends Reader<? extends T>> input : readers) {
+				b.inputs.add(new Source(SourceType.SUPPLIER_READER, input));
+			}
+			return new BuilderHasInput<T>(b);
+		}
+
+		public BuilderHasInput<T> inputItems(@SuppressWarnings("unchecked") T... items) {
+			return inputItems(Arrays.asList(items));
+		}
+
+		public BuilderHasInput<T> inputItems(Iterable<? extends T> iterable) {
+			Supplier<? extends Reader<? extends T>> supplier = () -> new ReaderFromIterator<T>(iterable.iterator());
+			return readers(Collections.singletonList(supplier));
+		}
+
+		public BuilderHasInput<T> inputItems(Iterator<? extends T> iterator) {
+			Supplier<? extends Reader<? extends T>> supplier = () -> new ReaderFromIterator<T>(iterator);
+			return readers(Collections.singletonList(supplier));
+		}
+
+		private Supplier<InputStream> supplier(File file) {
+			return () -> {
+				try {
+					return b.fileSystem.inputStream(file);
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			};
+		}
+
+	}
+
+	public static final class BuilderHasInput<T> {
+		private final Builder<T> b;
+
+		BuilderHasInput(Builder<T> b) {
+			this.b = b;
+		}
+
+		public BuilderHasInput<T> filter(Predicate<? super T> predicate) {
+			Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+			return transform(r -> currentTransform.apply(r).filter(predicate));
+		}
+
+		@SuppressWarnings("unchecked")
+		public BuilderHasInput<T> map(Function<? super T, ? extends T> mapper) {
+			Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+			return transform(r -> ((Reader<T>) currentTransform.apply(r)).map(mapper));
+		}
+
+		@SuppressWarnings("unchecked")
+		public BuilderHasInput<T> flatMap(Function<? super T, ? extends List<? extends T>> mapper) {
+			Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+			return transform(r -> ((Reader<T>) currentTransform.apply(r)).flatMap(mapper));
+		}
+
+		@SuppressWarnings("unchecked")
+		public BuilderHasInput<T> transform(Function<? super Reader<T>, ? extends Reader<? extends T>> transform) {
+			Preconditions.checkNotNull(transform, "transform cannot be null");
+			Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+			b.transform = r -> transform.apply((Reader<T>) currentTransform.apply(r));
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public BuilderHasInput<T> transformStream(
+				Function<? super Stream<T>, ? extends Stream<? extends T>> transform) {
+			Preconditions.checkNotNull(transform, "transform cannot be null");
+			Function<? super Reader<T>, ? extends Reader<? extends T>> currentTransform = b.transform;
+			b.transform = r -> ((Reader<T>) currentTransform.apply(r)).transform(transform);
 			return this;
 		}
 
@@ -357,13 +356,13 @@ public final class Sorter<T> {
 			b.tempDirectory = directory;
 			return (S) this;
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		public S fileSystem(FileSystem fileSystem) {
 			b.fileSystem = fileSystem;
 			return (S) this;
 		}
-		
+
 		public S fileSystemS3(Client s3, String region) {
 			return fileSystem(new FileSystemS3(s3, region));
 		}
@@ -416,7 +415,7 @@ public final class Sorter<T> {
 				}).collect(Collectors.toList());
 	}
 
-	public static final class BuilderHasOutputStreamed<T> extends BuilderHasOutputBase<T, BuilderHasOutputStreamed<T>>{
+	public static final class BuilderHasOutputStreamed<T> extends BuilderHasOutputBase<T, BuilderHasOutputStreamed<T>> {
 
 		BuilderHasOutputStreamed(Builder<T> b) {
 			super(b);
@@ -439,8 +438,8 @@ public final class Sorter<T> {
 		 */
 		public Stream<T> sort() {
 			try {
-				boolean tempDirectorySpecifiedByUser = b.tempDirectory == null;
-				if (tempDirectorySpecifiedByUser) {
+				boolean tempDirectorySpecifiedByUser = b.tempDirectory != null;
+				if (!tempDirectorySpecifiedByUser) {
 					b.tempDirectory = b.fileSystem.defaultTempDirectory();
 				}
 				b.output = b.fileSystem.nextTempFile(b.tempDirectory);
@@ -454,7 +453,9 @@ public final class Sorter<T> {
 						.onClose(() -> {
 							try {
 								b.fileSystem.delete(b.output);
-								b.fileSystem.finished(b.tempDirectory, tempDirectorySpecifiedByUser);
+								if (!tempDirectorySpecifiedByUser) {
+									b.fileSystem.finished(b.tempDirectory);
+								}
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}
@@ -522,7 +523,8 @@ public final class Sorter<T> {
 		log("completed initial split and sort, starting merge, elapsed time="
 				+ (System.currentTimeMillis() - time) / 1000.0 + "s");
 		if (files.size() == 1) {
-			// this move action will only occur when the data to be sorted is small enough to be 
+			// this move action will only occur when the data to be sorted is small enough
+			// to be
 			// sorted completely in memory (so this action won't in general be expensive).
 			fileSystem.move(files.get(0), output);
 		} else {
@@ -555,7 +557,7 @@ public final class Sorter<T> {
 			if (files.isEmpty()) {
 				fileSystem.delete(output);
 				fileSystem.outputStream(output).close();
-			} 
+			}
 			return;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
