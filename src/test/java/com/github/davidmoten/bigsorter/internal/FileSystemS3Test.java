@@ -3,6 +3,7 @@ package com.github.davidmoten.bigsorter.internal;
 import java.io.File;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import com.github.davidmoten.aws.lw.client.Client;
@@ -13,23 +14,33 @@ import com.github.davidmoten.aws.lw.client.Response;
 public final class FileSystemS3Test {
 
 	@Test
-	@Ignore
-	public void mkdirs() {
-		Client client = Mockito.mock(Client.class);
-		Request request1 = Mockito.mock(Request.class);
-		Response response1 = Mockito.mock(Response.class);
-		Request request2 = Mockito.mock(Request.class);
-		Mockito.when(client.path("temp")).thenReturn(request1, request2);
-		Mockito.when(request1.query("location")).thenReturn(request1);
-		Mockito.when(request1.response()).thenReturn(response1);
-		Mockito.when(response1.statusCode()).thenReturn(404);
-		Mockito.when(request2.method(HttpMethod.PUT)).thenReturn(request2);
-		Mockito.when(request2.requestBody(Mockito.anyString())).thenReturn(request2);
-		Mockito.doNothing().when(request2).execute();
+	public void mkdirsWhenDoesNotExist() {
+		Client s3 = Mockito.mock(Client.class);
+		Request request1a = Mockito.mock(Request.class);
+		Request request1b = Mockito.mock(Request.class);
+		Response response = Mockito.mock(Response.class);
+		Request request2a = Mockito.mock(Request.class);
+		Request request2b = Mockito.mock(Request.class);
+		Request request2c = Mockito.mock(Request.class);
+		Mockito.when(s3.path("temp")).thenReturn(request1a, request2a);
+		Mockito.when(request1a.query("location")).thenReturn(request1b);
+		Mockito.when(request1b.response()).thenReturn(response);
+		Mockito.when(response.statusCode()).thenReturn(404);
+		Mockito.when(request2a.method(HttpMethod.PUT)).thenReturn(request2b);
+		Mockito.when(request2b.requestBody(Mockito.anyString())).thenReturn(request2c);
+		Mockito.doNothing().when(request2c).execute();
 
-		FileSystemS3 fs = new FileSystemS3(client, "ap-southeast-2");
+		FileSystemS3 fs = new FileSystemS3(s3, "ap-southeast-2");
 		fs.mkdirs(new File("temp"));
-		Mockito.verifyNoMoreInteractions(request1, response1, request2);
+		InOrder o = Mockito.inOrder(s3, request1a, request1b, response, request2a, request2b, request2c);
+		o.verify(s3).path("temp");
+		o.verify(request1a).query("location");
+		o.verify(request1b).response();
+		o.verify(response).statusCode();
+		o.verify(request2a).method(HttpMethod.PUT);
+		o.verify(request2b).requestBody(Mockito.anyString());
+		o.verify(request2c).execute();
+		o.verifyNoMoreInteractions();
 	}
 
 }
