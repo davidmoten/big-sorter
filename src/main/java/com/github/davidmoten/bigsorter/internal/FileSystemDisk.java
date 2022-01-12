@@ -15,9 +15,15 @@ import java.nio.file.StandardCopyOption;
 import com.github.davidmoten.bigsorter.FileSystem;
 
 public final class FileSystemDisk implements FileSystem {
-	
+
 	private static final int BUFFER_SIZE = 8192;
-	
+
+	public static final FileSystemDisk INSTANCE = new FileSystemDisk();
+
+	private FileSystemDisk() {
+		// prevent instantiation
+	}
+
 	@Override
 	public File nextTempFile(File directory) throws IOException {
 		return File.createTempFile("big-sorter", "", directory);
@@ -31,10 +37,10 @@ public final class FileSystemDisk implements FileSystem {
 	@Override
 	public void move(File a, File b) throws IOException {
 		Files.move( //
-                a.toPath(), //
-                b.toPath(), //
-                StandardCopyOption.ATOMIC_MOVE, //
-                StandardCopyOption.REPLACE_EXISTING);		
+				a.toPath(), //
+				b.toPath(), //
+				StandardCopyOption.ATOMIC_MOVE, //
+				StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	@Override
