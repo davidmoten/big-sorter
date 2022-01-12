@@ -41,7 +41,6 @@ import org.apache.commons.csv.CSVRecord;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.davidmoten.bigsorter.internal.FileSystemDisk;
 import com.github.davidmoten.guavamini.Lists;
 
 public class SorterTest {
@@ -736,7 +735,7 @@ public class SorterTest {
     public void testMergeFileWhenDoesNotExist() {
         List<Supplier<? extends Reader<? extends String>>> list = Collections.singletonList(() ->  
                 emptyReader());
-        FileSystemDisk fs = new FileSystemDisk();
+        FileSystem fs = FileSystem.DISK;
         Sorter<String> sorter = new Sorter<String>(fs, list, Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
                 }, new File(System.getProperty("java.io.tmpdir")), false, false);
