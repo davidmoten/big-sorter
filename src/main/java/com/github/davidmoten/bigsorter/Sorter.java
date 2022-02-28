@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.text.DecimalFormat;
@@ -510,7 +511,6 @@ public final class Sorter<T> {
         Files.move( //
                 result.toPath(), //
                 output.toPath(), //
-                StandardCopyOption.ATOMIC_MOVE, //
                 StandardCopyOption.REPLACE_EXISTING);
         log("sort of " + count + " records completed in "
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
