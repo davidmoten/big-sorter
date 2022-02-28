@@ -37,7 +37,7 @@ public class JsonSorterMain {
                 }
                 random.nextBytes(bytes);
                 s.append("{\"name\":\"" + Base64.getEncoder().encodeToString(bytes) + "\", \"age\":"
-                        + Math.abs(random.nextInt()) % 100 + "}");
+                        + random.nextInt(100) + "}");
                 if (remaining == 0) {
                     s.append("]");
                 } else {

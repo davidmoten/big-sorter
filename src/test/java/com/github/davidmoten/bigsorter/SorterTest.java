@@ -493,6 +493,7 @@ public class SorterTest {
     @Test
     public void testBig() throws IOException {
         final long N = Long.parseLong(System.getProperty("n", "1000000"));
+        SecureRandom r = new SecureRandom();
         for (long n = 1000; n <= N; n = n * 10) {
             File input = new File("target/large");
 
@@ -515,7 +516,6 @@ public class SorterTest {
             long total = 0;
             try (OutputStream out = new BufferedOutputStream(new FileOutputStream(input))) {
                 Writer<Integer> writer = serializer.createWriter(out);
-                SecureRandom r = new SecureRandom();
                 for (int i = 0; i < n; i++) {
                     int v = r.nextInt(1000);
                     total += v;
