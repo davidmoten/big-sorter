@@ -106,7 +106,7 @@ Sorter
 ```
 
 ### Example for sorting integers in a text file
-This approach will work but there is a lot of overhead from `Integer.parseInt` and writing int values as strings):
+This approach will work but there is a lot of overhead from `Integer.parseInt` and writing int values as strings:
 
 ```java
 Sorter
