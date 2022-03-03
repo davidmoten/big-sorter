@@ -105,6 +105,24 @@ Sorter
   .sort();
 ```
 
+### Example for sorting integers in a text file
+This approach will work but there is a lot of overhead from `Integer.parseInt` and writing int values as strings):
+
+```java
+Sorter
+  .serializerLinesUtf8()
+  .comparator((a, b) -> Integer.compare(Integer.parseInt(a), Integer.parseInt(b)))
+  .input(new File("src/test/resources/numbers.txt"))
+  .filter(line -> !line.isEmpty())
+  .output(new File("target/numbers-sorted.txt"))
+  .sort();
+```
+A better approach is to use a different format for the input file so you can use a custom serializer to just deal in 4 bytes per integer binary format:
+
+```java
+TODO
+```
+
 ### Example for sorting CSV
 Note that for sorting CSV you need to add the *commons-csv* dependency (see [Gettting started](#getting-started)).
 
