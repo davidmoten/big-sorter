@@ -1,9 +1,13 @@
 package com.github.davidmoten.bigsorter;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -70,6 +74,30 @@ public interface Serializer<T> {
     
     static Serializer<ObjectNode> jsonArray() {
         return JsonArraySerializer.INSTANCE;
+    }
+    
+    static <T> Serializer<T> dataSerializer(Function<? super DataInputStream, ? extends T> reader, BiConsumer<? super DataOutputStream, ? super T> writer){
+        return new DataSerializer<T>() {
+
+            @Override
+            public T read(DataInputStream dis) throws IOException {
+                try {
+                    return reader.apply(dis);
+                } catch (EOFException e) {
+                    return null;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public void write(DataOutputStream dos, T value) throws IOException {
+                try {
+                    writer.accept(dos, value);
+                }  catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }};
     }
     
 }

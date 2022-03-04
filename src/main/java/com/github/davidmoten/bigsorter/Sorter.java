@@ -139,6 +139,11 @@ public final class Sorter<T> {
             this.comparator = comparator;
             return new Builder2<T>(this);
         }
+        
+        @SuppressWarnings("unchecked")
+        public Builder2<T> naturalOrder() {
+            return comparator((Comparator<T>) Comparator.naturalOrder());
+        }
     }
 
     public static final class Builder2<T> {
@@ -411,12 +416,10 @@ public final class Sorter<T> {
                 }).collect(Collectors.toList());
     }
     
-    public static final class Builder5<T> {
-
-        private final Builder<T> b;
+    public static final class Builder5<T> extends Builder4Base<T, Builder5<T>>{
 
         Builder5(Builder<T> b) {
-            this.b = b;
+            super(b);
         }
 
         /**
