@@ -139,7 +139,10 @@ Sorter
   .count();
 ```
 
-A test was made sorting 10m random integers in a text file (one per line). Using the first method the runtime was 36s and the second more efficient method took 5.1s.
+A test was made sorting 100m random integers in a text file (one per line). 
+
+* Using the first method the runtime was 456s 
+* With the second more efficient method the conversion time was 20s and the runtime 61s = 81s
  
 ### Example for sorting CSV
 Note that for sorting CSV you need to add the *commons-csv* dependency (see [Gettting started](#getting-started)).
