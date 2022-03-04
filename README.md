@@ -117,7 +117,7 @@ Sorter
   .output(new File("target/numbers-sorted.txt"))
   .sort();
 ```
-A better approach is to use a different format for the input file so you can use a custom serializer to just deal in 4 bytes per integer binary format:
+A more efficient approach (if you need better runtime) is to use a different format for the input file so you can use a custom serializer to just deal in 4 bytes per integer binary format:
 
 ```java
 Serializer<Integer> intSerializer = Serializer.dataSerializer(
