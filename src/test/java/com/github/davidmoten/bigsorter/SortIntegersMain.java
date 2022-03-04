@@ -9,8 +9,8 @@ public class SortIntegersMain {
 
     public static void main(String[] args) throws FileNotFoundException {
         File textInts = new File("target/ints.txt");
+        Random r = new Random();
         try (PrintWriter out = new PrintWriter(textInts)) {
-            Random r = new Random();
             for (int i = 0; i < 10000000; i++) {
                 out.println(r.nextInt());
             }
