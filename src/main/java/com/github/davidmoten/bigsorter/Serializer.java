@@ -1,5 +1,7 @@
 package com.github.davidmoten.bigsorter;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -26,11 +28,11 @@ public interface Serializer<T> {
     Writer<T> createWriter(OutputStream out);
     
     default Reader<T> createReader(File file) throws FileNotFoundException {
-        return createReader(new FileInputStream(file));
+        return createReader(new BufferedInputStream(new FileInputStream(file)));
     }
     
     default Writer<T> createWriter(File file) throws FileNotFoundException {
-        return createWriter(new FileOutputStream(file));
+        return createWriter(new BufferedOutputStream(new FileOutputStream(file)));
     }
 
     static Serializer<String> linesUtf8() {
