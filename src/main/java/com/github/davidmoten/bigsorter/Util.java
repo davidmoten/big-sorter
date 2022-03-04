@@ -355,7 +355,7 @@ public final class Util {
         }
     }
     
-    static <S, T> void convert(File in, Serializer<S> inSerializer, File out,  Serializer<T> outSerializer, Function<? super S, ? extends T> mapper) {
+    public static <S, T> void convert(File in, Serializer<S> inSerializer, File out,  Serializer<T> outSerializer, Function<? super S, ? extends T> mapper) {
         try (Reader<S> r = inSerializer.createReader(in);
                 Writer<T> w = outSerializer.createWriter(out)) {
             S s;
