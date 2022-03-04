@@ -319,6 +319,30 @@ Sorter
   .output(out)
   .sort();
 ```  
+### Converting input files
+Bear in mind that the filter, map and transform methods don't change the Serializer and you'll notice that the map method only maps to the same type (so you can modify a string for instance but it stays a string). To transform input into a different format that is more efficient for sorting (like text integer to binary integer) you can use this utility method:
+
+```java
+import com.github.davidmoten.bigsorter.Util;
+
+static <S, T> void convert(File in, Serializer<S> inSerializer, File out,  Serializer<T> outSerializer, Function<? super S, ? extends T> mapper);
+```
+
+For example, let's convert a file of integers, one per text line to binary integers (4 bytes each):
+
+```java
+Serializer<Integer> intSerializer = Serializer.dataSerializer(
+   dis -> (Integer) dis.readInt(),
+   (dos, v) -> dos.writeInt(v));
+        
+// convert input from text integers to 4 byte binary integers
+File textInts = new File("src/test/resources/numbers.txt");
+File ints = new File("target/numbers-integers");
+Util.convert(textInts, Serializer.linesUtf8(), ints, intSerializer, line -> Integer.parseInt(line));
+```
+
+Converting the input to a more efficient format can make a big difference to the sort runtime. Sorting 100m integers was 6 times faster when the input was converted first to 4 byte binary ints (and that includes the conversion time).
+
 ## How to read the output file
 Having sorted to a file `f`, you can read from that file like so (`Reader` is `Iterable`):
 
