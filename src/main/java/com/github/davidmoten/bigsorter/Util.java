@@ -3,6 +3,7 @@ package com.github.davidmoten.bigsorter;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
@@ -352,6 +353,18 @@ public final class Util {
             return (RuntimeException) e;
         } else {
             return new RuntimeException(e);
+        }
+    }
+    
+    static <S, T> void convert(File in, Serializer<S> inSerializer, File out,  Serializer<T> outSerializer, Function<? super S, ? extends T> mapper) {
+        try (Reader<S> r = inSerializer.createReader(in);
+                Writer<T> w = outSerializer.createWriter(out)) {
+            S s;
+            while ((s = r.read()) != null) {
+                w.write(mapper.apply(s));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

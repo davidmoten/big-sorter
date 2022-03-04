@@ -558,7 +558,7 @@ public class SorterTest {
         String s = "word1,number,word2\n\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
         Serializer<CSVRecord> ser = Serializer
-                .csv(CSVFormat.DEFAULT.withFirstRecordAsHeader().withRecordSeparator("\n"), StandardCharsets.UTF_8);
+                .csv(CSVFormat.Builder.create().setHeader().setSkipHeaderRecord(true).build(), StandardCharsets.UTF_8);
         Comparator<CSVRecord> comparator = (x, y) -> {
             int a = Integer.parseInt(x.get("number"));
             int b = Integer.parseInt(y.get("number"));
@@ -581,7 +581,7 @@ public class SorterTest {
     public void testCsvWithoutHeader() throws IOException {
         String s = "\"a\",12,\"hello\"\n\"joy\",8,\"there\"";
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
-        Serializer<CSVRecord> ser = Serializer.csv(CSVFormat.DEFAULT.withRecordSeparator("\n"), StandardCharsets.UTF_8);
+        Serializer<CSVRecord> ser = Serializer.csv(CSVFormat.DEFAULT, StandardCharsets.UTF_8);
         Comparator<CSVRecord> comparator = (x, y) -> {
             int a = Integer.parseInt(x.get(1));
             int b = Integer.parseInt(y.get(1));
@@ -808,6 +808,40 @@ public class SorterTest {
                 }) //
                 .outputAsStream() //
                 .sort();
+    }
+    
+    @Test
+    public void testSortIntegersFromFile() {
+        Sorter //
+          .serializerLinesUtf8() //
+          .comparator((a, b) -> Integer.compare(Integer.parseInt(a), Integer.parseInt(b))) //
+          .input(new File("src/test/resources/numbers.txt")) //
+          .filter(line -> !line.isEmpty()) //
+          .output(new File("target/numbers-sorted.txt")) //
+          .sort();
+    }
+    
+    @Test
+    public void testSortIntegersFromFileMoreEfficient() throws IOException {
+        Serializer<Integer> intSerializer = Serializer.dataSerializer( //
+                dis -> (Integer) dis.readInt(), //
+                (dos, v) -> dos.writeInt(v));
+        
+        // convert input from text integers to 4 byte binary integers
+        File textInts = new File("src/test/resources/numbers.txt");
+        File ints = new File("target/numbers-integers");
+        Util.convert(textInts, Serializer.linesUtf8(), ints, intSerializer, line -> Integer.parseInt(line));
+        
+        List<Integer> list = Sorter //
+                .serializer(intSerializer) //
+                .naturalOrder() //
+                .input(ints) //
+                .outputAsStream() //
+                .sort() //
+                .collect(Collectors.toList());
+        assertEquals(10, list.size());
+        assertEquals(66904383, (int) list.get(0));
+        assertEquals(1956321588, (int) list.get(list.size() -1 ));
     }
     
     static void printOutput() throws IOException {
