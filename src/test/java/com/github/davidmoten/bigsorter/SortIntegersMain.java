@@ -11,7 +11,7 @@ public class SortIntegersMain {
         File textInts = new File("target/ints.txt");
         Random r = new Random();
         try (PrintWriter out = new PrintWriter(textInts)) {
-            for (int i = 0; i < 10000000; i++) {
+            for (int i = 0; i < 100000000; i++) {
                 out.println(r.nextInt());
             }
         }
