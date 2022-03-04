@@ -13,9 +13,16 @@ public class SortIntegersMain {
         try (PrintWriter out = new PrintWriter(textInts)) {
             for (int i = 0; i < 100000000; i++) {
                 out.println(r.nextInt());
+                if (i % 1000000 == 0) {
+                    System.out.println("written " + i/1000000.0 + "m");
+                }
             }
         }
-
+        
+        System.out.println("file written");
+        
+        long t = System.currentTimeMillis();
+        
         Serializer<Integer> intSerializer = Serializer.dataSerializer( //
                 dis -> (Integer) dis.readInt(), //
                 (dos, v) -> dos.writeInt(v));
@@ -24,6 +31,8 @@ public class SortIntegersMain {
         File ints = new File("target/numbers-integers");
         Util.convert(textInts, Serializer.linesUtf8(), ints, intSerializer, line -> Integer.parseInt(line));
 
+        System.out.println("converted in " + (System.currentTimeMillis() - t)/1000.0 + "s");
+        
         Sorter //
                 .serializer(intSerializer) //
                 .naturalOrder() //
