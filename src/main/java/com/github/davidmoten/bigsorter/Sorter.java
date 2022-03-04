@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -57,11 +58,12 @@ public final class Sorter<T> {
     private final File tempDirectory;
     private final boolean unique;
     private final boolean initialSortInParallel;
+    private Optional<OutputStreamWriterFactory<T>> outputWriterFactory;
     private long count = 0;
 
     Sorter(List<Supplier<? extends Reader<? extends T>>> inputs, Serializer<T> serializer, File output,
             Comparator<? super T> comparator, int maxFilesPerMerge, int maxItemsPerFile, Consumer<? super String> log,
-            int bufferSize, File tempDirectory, boolean unique, boolean initialSortInParallel) {
+            int bufferSize, File tempDirectory, boolean unique, boolean initialSortInParallel, Optional<OutputStreamWriterFactory<T>> outputWriterFactory) {
         Preconditions.checkNotNull(inputs, "inputs cannot be null");
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
         Preconditions.checkNotNull(output, "output cannot be null");
@@ -77,6 +79,7 @@ public final class Sorter<T> {
         this.tempDirectory = tempDirectory;
         this.unique = unique;
         this.initialSortInParallel = initialSortInParallel;
+        this.outputWriterFactory = outputWriterFactory;
     }
 
     public static <T> Builder<T> serializer(Serializer<T> serializer) {
@@ -118,6 +121,7 @@ public final class Sorter<T> {
         private static final DateTimeFormatter DATE_TIME_PATTERN = DateTimeFormatter
                 .ofPattern("yyyy-MM-dd HH:mm:ss.Sxxxx");
         private List<Source> inputs = Lists.newArrayList();
+        private Optional<InputStreamReaderFactory<T>> inputReaderFactory = Optional.empty();
         private final Serializer<T> serializer;
         private File output;
         private Comparator<? super T> comparator;
@@ -129,11 +133,29 @@ public final class Sorter<T> {
         private Function<? super Reader<T>, ? extends Reader<? extends T>> transform = r -> r;
         private boolean unique;
         private boolean initialSortInParallel;
+        private Optional<OutputStreamWriterFactory<T>> outputWriterFactory = Optional.empty();
 
         Builder(Serializer<T> serializer) {
             this.serializer = serializer;
         }
-
+        
+        /**
+         * Sets a conversion for input before sorting with the main serializer happens.
+         * Only applies when input is specified as a File or another supplier of an
+         * InputStream.
+         * 
+         * @param <S>           input record type
+         * @param readerFactory readerFactory for the input record type (can be a {@link Serializer})
+         * @param mapper        conversion to <T>
+         * @return this
+         */
+        public <S> Builder<T> inputMapper(InputStreamReaderFactory<? extends S> readerFactory, Function<? super S, ? extends T> mapper) {
+            Preconditions.checkArgument(!inputReaderFactory.isPresent());
+            InputStreamReaderFactory<T> factory = in -> readerFactory.createReader(in).map(mapper);
+            this.inputReaderFactory = Optional.of(factory);
+            return this;
+        }
+        
         public Builder2<T> comparator(Comparator<? super T> comparator) {
             Preconditions.checkNotNull(comparator, "comparator cannot be null");
             this.comparator = comparator;
@@ -378,6 +400,15 @@ public final class Sorter<T> {
         Builder4(Builder<T> b) {
             super(b);
         }
+        
+        public <S> Builder4<T> map(OutputStreamWriterFactory<? super S> writerFactory, Function<? super T, ? extends S> mapper) {
+            Preconditions.checkArgument(!b.outputWriterFactory.isPresent());
+            OutputStreamWriterFactory<T> factory = out -> writerFactory.createWriter(out).map(mapper);
+            b.outputWriterFactory  = Optional.of(factory);
+            return this;
+        }
+        
+        // TODO add flatMap method, stream transforms?
 
         /**
          * Sorts the input and writes the result to the given output file. If an
@@ -387,7 +418,7 @@ public final class Sorter<T> {
         public void sort() {
             Sorter<T> sorter = new Sorter<T>(inputs(b), b.serializer, b.output, b.comparator,
                     b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                    b.unique, b.initialSortInParallel);
+                    b.unique, b.initialSortInParallel, b.outputWriterFactory);
             try {
                 sorter.sort();
             } catch (IOException e) {
@@ -406,14 +437,19 @@ public final class Sorter<T> {
                     if (source.type == SourceType.SUPPLIER_INPUT_STREAM) {
                         return (Supplier<? extends Reader<? extends T>>) //
                         (() -> b.transform //
-                                .apply(b.serializer.createReader(
-                                        ((Supplier<? extends InputStream>) source.source).get())));
+                                .apply(inputStreamReader(b, source)));
                     } else { // Supplier of a Reader
                         return (Supplier<? extends Reader<? extends T>>) 
                                 (() -> b.transform //
                                         .apply(((Supplier<Reader<T>>) source.source).get()));
                     }
                 }).collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Reader<T> inputStreamReader(Builder<T> b, Source source) {
+        InputStreamReaderFactory<T> rf = b.inputReaderFactory.orElse(b.serializer);
+        return rf.createReader(((Supplier<? extends InputStream>) source.source).get());
     }
     
     public static final class Builder5<T> extends Builder4Base<T, Builder5<T>>{
@@ -442,7 +478,7 @@ public final class Sorter<T> {
                 b.output = nextTempFile(b.tempDirectory);
                 Sorter<T> sorter = new Sorter<T>(inputs(b), b.serializer, b.output, b.comparator,
                         b.maxFilesPerMerge, b.maxItemsPerFile, b.logger, b.bufferSize, b.tempDirectory,
-                        b.unique, b.initialSortInParallel);
+                        b.unique, b.initialSortInParallel, b.outputWriterFactory);
                 sorter.sort();
                 return b.serializer //
                         .createReader(b.output) //
@@ -510,10 +546,14 @@ public final class Sorter<T> {
         log("completed initial split and sort, starting merge, elapsed time="
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
         File result = merge(files);
-        Files.move( //
-                result.toPath(), //
-                output.toPath(), //
-                StandardCopyOption.REPLACE_EXISTING);
+        if (outputWriterFactory.isPresent()) {
+            Util.convert(result, serializer, output, outputWriterFactory.get(), x -> x);
+        } else {
+            Files.move( //
+                    result.toPath(), //
+                    output.toPath(), //
+                    StandardCopyOption.REPLACE_EXISTING);
+        }
         log("sort of " + count + " records completed in "
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
         return output;

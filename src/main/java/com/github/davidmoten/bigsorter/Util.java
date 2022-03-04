@@ -355,9 +355,9 @@ public final class Util {
         }
     }
     
-    public static <S, T> void convert(File in, Serializer<S> inSerializer, File out,  Serializer<T> outSerializer, Function<? super S, ? extends T> mapper) {
-        try (Reader<S> r = inSerializer.createReader(in);
-                Writer<T> w = outSerializer.createWriter(out)) {
+    public static <S, T> void convert(File in, InputStreamReaderFactory<S> readerFactory, File out,
+            OutputStreamWriterFactory<T> writerFactory, Function<? super S, ? extends T> mapper) {
+        try (Reader<S> r = readerFactory.createReader(in); Writer<T> w = writerFactory.createWriter(out)) {
             S s;
             while ((s = r.read()) != null) {
                 w.write(mapper.apply(s));
