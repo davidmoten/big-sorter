@@ -120,7 +120,23 @@ Sorter
 A better approach is to use a different format for the input file so you can use a custom serializer to just deal in 4 bytes per integer binary format:
 
 ```java
-TODO
+Serializer<Integer> intSerializer = Serializer.dataSerializer(
+   dis -> (Integer) dis.readInt(),
+   (dos, v) -> dos.writeInt(v));
+        
+// convert input from text integers to 4 byte binary integers
+File textInts = new File("src/test/resources/numbers.txt");
+File ints = new File("target/numbers-integers");
+Util.convert(textInts, Serializer.linesUtf8(), ints, intSerializer, line -> Integer.parseInt(line));
+        
+Sorter 
+  .serializer(intSerializer) 
+  .naturalOrder() 
+  .input(ints) 
+  .outputAsStream() 
+  .sort()
+  .peek(System.out.println)
+  .count();
 ```
 
 ### Example for sorting CSV
