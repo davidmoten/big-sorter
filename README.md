@@ -36,7 +36,7 @@ One or more large files or `InputStream`s of records are sorted to one output fi
 * each segment is sorted in memory and then written to a file
 * the segment files are then merged in groups according to `maxFilesPerMerge`
 * the merged files are repeatedly merged in groups until only one file remains (with all of the sorted entries)
-* Note that where possible files are merged with similarly sized files to ensure that we don't start approaching insertion sort computational complexity (O(n<sup>2</sup>).
+* Note that, where possible, files are merged with similarly sized files to ensure that we don't start approaching insertion sort computational complexity (O(n<sup>2</sup>).
 * the merge step uses a Min Heap (`PriorityQueue`) for efficiency
 
 ## Getting started
