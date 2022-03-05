@@ -35,6 +35,8 @@ public class SortIntegersMain {
                 .output(output) //
                 .map(Serializer.linesUtf8(), x -> Integer.toString(x)) //
                 .loggerStdOut() //
+                .initialSortInParallel() //
+                .maxItemsPerFile(5_000_000) //
                 .sort();
 
         Sorter //
@@ -44,6 +46,8 @@ public class SortIntegersMain {
                 .filter(line -> !line.isEmpty()) //
                 .output(output) //
                 .loggerStdOut() //
+                .initialSortInParallel() //
+                .maxItemsPerFile(5_000_000) //
                 .sort();
 
     }
