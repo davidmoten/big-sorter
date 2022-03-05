@@ -508,6 +508,12 @@ public final class Sorter<T> {
         void close() throws IOException;
     }
     
+    ///////////////////////
+    //
+    // Main sort routine  
+    //
+    ///////////////////////
+    
     private File sort() throws IOException {
 
         tempDirectory.mkdirs();
