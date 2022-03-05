@@ -551,6 +551,9 @@ public final class Sorter<T> {
         }
         log("completed initial split and sort, starting merge, elapsed time="
                 + (System.currentTimeMillis() - time) / 1000.0 + "s");
+
+        // TODO write final merge to final output to avoid possible copying at the end
+        // (and apply outputWriterfactory on the fly if present)
         File result = merge(files);
         if (outputWriterFactory.isPresent()) {
             Util.convert(result, serializer, output, outputWriterFactory.get(), x -> x);
