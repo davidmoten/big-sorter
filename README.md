@@ -62,7 +62,7 @@ If you want to sort JSON arrays add this extra dependency:
 <dependency>
     <groupId>com.fasterxml.jackson.core</groupId>
     <artifactId>jackson-databind</artifactId>
-    <version>2.11.0</version>
+    <version>LATEST_VERSION_HERE</version>
 </dependency>
 ```
 If you are new to Java or Maven, go to [big-sorter-example](https://github.com/davidmoten/big-sorter-example).
