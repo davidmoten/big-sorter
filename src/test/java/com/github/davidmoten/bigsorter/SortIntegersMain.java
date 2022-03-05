@@ -33,7 +33,7 @@ public class SortIntegersMain {
                 .naturalOrder() //
                 .input(textInts) //
                 .output(output) //
-                .map(Serializer.linesUtf8(), x -> Integer.toString(x)) //
+                .outputMapper(Serializer.linesUtf8(), x -> Integer.toString(x)) //
                 .loggerStdOut() //
                 .initialSortInParallel() //
                 .maxItemsPerFile(5_000_000) //

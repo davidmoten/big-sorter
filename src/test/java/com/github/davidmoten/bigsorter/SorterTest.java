@@ -857,7 +857,7 @@ public class SorterTest {
                 .naturalOrder() //
                 .input("456","123", "234") //
                 .output(output) //
-                .map(Serializer.linesUtf8(), x -> Integer.toString(x)) //
+                .outputMapper(Serializer.linesUtf8(), x -> Integer.toString(x)) //
                 .sort();
         List<String> list = Files.readAllLines(output.toPath());
         assertEquals(Arrays.asList("123", "234", "456"), list);

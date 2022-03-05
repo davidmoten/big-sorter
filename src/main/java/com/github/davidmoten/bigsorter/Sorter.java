@@ -401,7 +401,7 @@ public final class Sorter<T> {
             super(b);
         }
         
-        public <S> Builder4<T> map(OutputStreamWriterFactory<? super S> writerFactory, Function<? super T, ? extends S> mapper) {
+        public <S> Builder4<T> outputMapper(OutputStreamWriterFactory<? super S> writerFactory, Function<? super T, ? extends S> mapper) {
             Preconditions.checkArgument(!b.outputWriterFactory.isPresent());
             OutputStreamWriterFactory<T> factory = out -> writerFactory.createWriter(out).map(mapper);
             b.outputWriterFactory  = Optional.of(factory);
