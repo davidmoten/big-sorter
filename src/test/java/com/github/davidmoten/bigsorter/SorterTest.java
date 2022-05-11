@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -747,7 +748,7 @@ public class SorterTest {
                 emptyReader());
         Sorter<String> sorter = new Sorter<String>(list, Serializer.linesUtf8(),
                 OUTPUT, Comparator.naturalOrder(), 3, 1000, x -> {
-                }, 8192, new File(System.getProperty("java.io.tmpdir")), false, false);
+                }, 8192, new File(System.getProperty("java.io.tmpdir")), false, false, Optional.empty());
         sorter.merge(Lists.newArrayList(new File("target/doesnotexist"), new File("target/doesnotexist2")));
     }
     
@@ -823,25 +824,43 @@ public class SorterTest {
     
     @Test
     public void testSortIntegersFromFileMoreEfficient() throws IOException {
+        File textInts = new File("src/test/resources/numbers.txt");
+        
         Serializer<Integer> intSerializer = Serializer.dataSerializer( //
                 dis -> (Integer) dis.readInt(), //
                 (dos, v) -> dos.writeInt(v));
         
-        // convert input from text integers to 4 byte binary integers
-        File textInts = new File("src/test/resources/numbers.txt");
-        File ints = new File("target/numbers-integers");
-        Util.convert(textInts, Serializer.linesUtf8(), ints, intSerializer, line -> Integer.parseInt(line));
-        
         List<Integer> list = Sorter //
                 .serializer(intSerializer) //
+                .inputMapper(Serializer.linesUtf8(), line -> Integer.parseInt(line)) //
                 .naturalOrder() //
-                .input(ints) //
+                .input(textInts) //
                 .outputAsStream() //
                 .sort() //
                 .collect(Collectors.toList());
+        
         assertEquals(10, list.size());
         assertEquals(66904383, (int) list.get(0));
         assertEquals(1956321588, (int) list.get(list.size() -1 ));
+    }
+    
+    @Test
+    public void testSortIntegersFromFileMoreEfficientOutputIsFileMappedBackToStringLines() throws IOException {
+        Serializer<Integer> intSerializer = Serializer.dataSerializer( //
+                dis -> (Integer) dis.readInt(), //
+                (dos, v) -> dos.writeInt(v));
+        
+        File output = new File("target/output");
+        Sorter //
+                .serializer(intSerializer) //
+                .inputMapper(Serializer.linesUtf8(), line -> Integer.parseInt(line)) //
+                .naturalOrder() //
+                .input("456","123", "234") //
+                .output(output) //
+                .outputMapper(Serializer.linesUtf8(), x -> Integer.toString(x)) //
+                .sort();
+        List<String> list = Files.readAllLines(output.toPath());
+        assertEquals(Arrays.asList("123", "234", "456"), list);
     }
     
     static void printOutput() throws IOException {

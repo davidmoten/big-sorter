@@ -1,17 +1,9 @@
 package com.github.davidmoten.bigsorter;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 
@@ -21,19 +13,7 @@ import org.apache.commons.csv.CSVRecord;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.davidmoten.guavamini.Preconditions;
 
-public interface Serializer<T> {
-
-    Reader<T> createReader(InputStream in);
-
-    Writer<T> createWriter(OutputStream out);
-    
-    default Reader<T> createReader(File file) throws FileNotFoundException {
-        return createReader(new BufferedInputStream(new FileInputStream(file)));
-    }
-    
-    default Writer<T> createWriter(File file) throws FileNotFoundException {
-        return createWriter(new BufferedOutputStream(new FileOutputStream(file)));
-    }
+public interface Serializer<T> extends InputStreamReaderFactory<T>, OutputStreamWriterFactory<T> {
 
     static Serializer<String> linesUtf8() {
         return linesUtf8(LineDelimiter.LINE_FEED);

@@ -33,7 +33,7 @@ public class SO_AnyQuickSortingForAHugeCsvFile {
             }
         }
         System.out.println("created input file in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
-        Sorter.serializer(Serializer.csv(CSVFormat.DEFAULT.withRecordSeparator('\n'), //
+        Sorter.serializer(Serializer.csv(CSVFormat.Builder.create().setRecordSeparator('\n').build(), //
                 StandardCharsets.UTF_8)) //
                 .comparator((x, y) -> Integer.compare(Integer.parseInt(x.get(10)),
                         Integer.parseInt(y.get(10)))) //

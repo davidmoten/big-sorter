@@ -58,12 +58,12 @@ public interface Reader<T> extends Closeable, Iterable<T> {
         };
     }
 
-    default Reader<T> map(Function<? super T, ? extends T> mapper) {
+    default <S> Reader<S> map(Function<? super T, ? extends S> mapper) {
         Reader<T> r = this;
-        return new Reader<T>() {
+        return new Reader<S>() {
 
             @Override
-            public T read() throws IOException {
+            public S read() throws IOException {
                 T v = r.read();
                 if (v == null) {
                     return null;

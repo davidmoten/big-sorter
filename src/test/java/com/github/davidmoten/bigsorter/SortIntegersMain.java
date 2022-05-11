@@ -21,26 +21,22 @@ public class SortIntegersMain {
 
         System.out.println("file written");
 
-        long t = System.currentTimeMillis();
-
         Serializer<Integer> intSerializer = Serializer.dataSerializer( //
                 dis -> (Integer) dis.readInt(), //
                 (dos, v) -> dos.writeInt(v));
-
-        // convert input from text integers to 4 byte binary integers
-        File ints = new File("target/numbers-integers");
-        Util.convert(textInts, Serializer.linesUtf8(), ints, intSerializer, line -> Integer.parseInt(line));
-
-        System.out.println("converted in " + (System.currentTimeMillis() - t) / 1000.0 + "s");
 
         File output = new File("target/out");
 
         Sorter //
                 .serializer(intSerializer) //
+                .inputMapper(Serializer.linesUtf8(), line -> Integer.parseInt(line)) //
                 .naturalOrder() //
-                .input(ints) //
+                .input(textInts) //
                 .output(output) //
+                .outputMapper(Serializer.linesUtf8(), x -> Integer.toString(x)) //
                 .loggerStdOut() //
+                .initialSortInParallel() //
+                .maxItemsPerFile(5_000_000) //
                 .sort();
 
         Sorter //
@@ -48,7 +44,10 @@ public class SortIntegersMain {
                 .comparator((a, b) -> Integer.compare(Integer.parseInt(a), Integer.parseInt(b))) //
                 .input(textInts) //
                 .filter(line -> !line.isEmpty()) //
-                .output(output).loggerStdOut() //
+                .output(output) //
+                .loggerStdOut() //
+                .initialSortInParallel() //
+                .maxItemsPerFile(5_000_000) //
                 .sort();
 
     }
