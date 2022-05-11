@@ -58,7 +58,7 @@ public final class Sorter<T> {
     private final File tempDirectory;
     private final boolean unique;
     private final boolean initialSortInParallel;
-    private Optional<OutputStreamWriterFactory<T>> outputWriterFactory;
+    private final Optional<OutputStreamWriterFactory<T>> outputWriterFactory;
     private long count = 0;
 
     Sorter(List<Supplier<? extends Reader<? extends T>>> inputs, Serializer<T> serializer, File output,
@@ -68,6 +68,7 @@ public final class Sorter<T> {
         Preconditions.checkNotNull(serializer, "serializer cannot be null");
         Preconditions.checkNotNull(output, "output cannot be null");
         Preconditions.checkNotNull(comparator, "comparator cannot be null");
+        Preconditions.checkNotNull(outputWriterFactory, "outputWriterFactory cannot be null");
         this.inputs = inputs;
         this.serializer = serializer;
         this.output = output;
