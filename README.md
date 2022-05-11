@@ -117,32 +117,32 @@ Sorter
   .output(new File("target/numbers-sorted.txt"))
   .sort();
 ```
-A more efficient approach (if you need better runtime) is to use a different format for the input file so you can use a custom serializer to just deal in 4 bytes per integer binary format:
+A more efficient approach (if you need better runtime) is to use an `inputMapper` (you can also use an `outputMapper` at the end):
 
 ```java
-Serializer<Integer> intSerializer = Serializer.dataSerializer(
-   dis -> (Integer) dis.readInt(),
-   (dos, v) -> dos.writeInt(v));
-        
-// convert input from text integers to 4 byte binary integers
 File textInts = new File("src/test/resources/numbers.txt");
-File ints = new File("target/numbers-integers");
-Util.convert(textInts, Serializer.linesUtf8(), ints, intSerializer, line -> Integer.parseInt(line));
+
+// It's much more efficient to be dealing in 4 bytes of integer
+// than strings
+Serializer<Integer> intSerializer = Serializer.dataSerializer( //
+                dis -> (Integer) dis.readInt(), //
+                (dos, v) -> dos.writeInt(v));
         
 Sorter 
-  .serializer(intSerializer) 
-  .naturalOrder() 
-  .input(ints) 
-  .outputAsStream() 
-  .sort()
-  .peek(System.out.println)
+  .serializer(intSerializer)
+  .inputMapper(Serializer.linesUtf8(), line -> Integer.parseInt(line))
+  .naturalOrder()
+  .input(textInts)
+  .outputAsStream()
+  .sort()        
+  .peek(System.out::println)
   .count();
 ```
 
 A test was made sorting 100m random integers in a text file (one per line). 
 
 * Using the first method the runtime was 456s 
-* With the second more efficient method the conversion time was 20s and the runtime 61s = 81s
+* With the second more efficient method the runtime was 81s
  
 ### Example for sorting CSV
 Note that for sorting CSV you need to add the *commons-csv* dependency (see [Gettting started](#getting-started)).
