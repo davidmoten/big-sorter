@@ -692,7 +692,7 @@ public final class Sorter<T> {
     }
     
     private static File nextTempFile(File tempDirectory) throws IOException {
-        return File.createTempFile("big-sorter", "", tempDirectory);
+        return Files.createTempFile(tempDirectory.toPath(), "big-sorter", "").toFile();
     }
 
 }
