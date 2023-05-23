@@ -21,7 +21,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <jmh.version>1.36</jmh.version>
 
-        <checkstyle.version>3.2.2</checkstyle.version>
+        <checkstyle.version>3.3.0</checkstyle.version>
         <javadoc.version>3.5.0</javadoc.version>
         <pmd.version>3.21.0</pmd.version>
         <project.info.version>3.4.3</project.info.version>
