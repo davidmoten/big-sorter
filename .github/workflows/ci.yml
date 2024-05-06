@@ -18,7 +18,5 @@ on:
 
 jobs:
   build:
-    name: Verify
-    uses: davidmoten/repos/.github/workflows/ci.yml@master
-    with:
-      verify-goal: 'install javadoc:javadoc'
+    name: install
+    uses: davidmoten/workflows/workflows/ci.yml@master
