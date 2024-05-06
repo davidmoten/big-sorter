@@ -1,18 +1,7 @@
 name: ci
 
-## Does continuous integration build with Java 8 and 11 and 
-## if succeeds and due to a dependabot pull request (minor or
-## patch verson change) it will automatically merge the PR. 
-
-## Unlike many sample automerge workflows this does not rely 
-## on third-party libraries apart from the official dependabot
-## repository ones. This reduces the security risk significantly
-## (we don't want to unknowingly merge malicious code or expose 
-## secrets to a malicious third party). 
-
 on: [push, pull_request]
 
 jobs:
   build:
-    name: install
     uses: davidmoten/workflows/.github/workflows/ci.yml@master
