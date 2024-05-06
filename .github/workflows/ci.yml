@@ -8,7 +8,7 @@ name: ci
 ## on third-party libraries apart from the official dependabot
 ## repository ones. This reduces the security risk significantly
 ## (we don't want to unknowingly merge malicious code or expose 
-## secrets to a malicious third party).
+## secrets to a malicious third party). 
 
 on:
   push:
