@@ -19,4 +19,4 @@ on:
 jobs:
   build:
     name: install
-    uses: davidmoten/workflows/workflows/ci.yml@master
+    uses: davidmoten/workflows/.github/workflows/ci.yml@master
