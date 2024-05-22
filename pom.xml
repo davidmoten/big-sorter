@@ -29,7 +29,7 @@
         <taglist.version>3.0.0</taglist.version>
         <m3.site.version>3.12.1</m3.site.version>
         <coverage.reports.dir>${project.build.directory}/target/coverage-reports</coverage.reports.dir>
-        <exec.version>3.2.0</exec.version>
+        <exec.version>3.3.0</exec.version>
         <jackson.version>2.17.1</jackson.version>
     </properties>
 
