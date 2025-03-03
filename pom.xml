@@ -30,7 +30,7 @@
         <m3.site.version>3.21.0</m3.site.version>
         <coverage.reports.dir>${project.build.directory}/target/coverage-reports</coverage.reports.dir>
         <exec.version>3.5.0</exec.version>
-        <jackson.version>2.18.2</jackson.version>
+        <jackson.version>2.18.3</jackson.version>
     </properties>
 
     <licenses>
